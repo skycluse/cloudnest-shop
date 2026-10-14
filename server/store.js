@@ -14,7 +14,10 @@ const path = require('path');
 const { products, categories } = require('./data/products');
 
 // 订单文件的位置：server/data/orders.json
-const ORDERS_FILE = path.join(__dirname, 'orders.json');
+// 注意：store.js 本身在 server/ 目录下，
+// 所以这里必须写成 path.join(__dirname, 'data', 'orders.json')。
+// 之前漏掉了 'data'，导致订单被写到了 server/orders.json，和注释不一致。
+const ORDERS_FILE = path.join(__dirname, 'data', 'orders.json');
 
 /**
  * 从文件里读出所有订单。

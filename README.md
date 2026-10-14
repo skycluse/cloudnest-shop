@@ -1,4 +1,4 @@
-﻿# 🪺 云巢商城 CloudNest
+# 🪺 云巢商城 CloudNest
 
 > 26 云屋三面前端（+ AI Agent 开发）项目考核作业
 > 一个包含**前端 + 后端 + 商品数据 + 完整购物流程 + AI 购物助手**的商城项目。
@@ -388,6 +388,20 @@ jsdom 测试显示「无 JS 报错、通过 4 项」，但实际上页面什么�
   这是少数几个用 `!important` 合理的场景：`hidden` 的语义不该被任何布局样式覆盖。
 - 教训：**自动化测试通过 ≠ 界面正确**。视觉问题必须靠「看」来发现，
   所以我把各页面的截图保留在 `docs/screenshots/` 里。
+
+**Bug 6：订单文件被写到了错误的目录**
+
+`store.js` 的注释写着「订单文件的位置：server/data/orders.json」，
+但代码写的是 `path.join(__dirname, 'orders.json')` —— **漏掉了 `'data'`**。
+
+- 现象：实际生成的是 `server/orders.json`，而不是 `server/data/orders.json`
+- 影响：功能上「能用」（读写都在同一个错误路径），但和注释、`.gitignore` 的配置不一致。
+  `.gitignore` 里忽略的是 `server/data/orders.json`，导致错误路径的那个文件**没有被忽略**，
+  差点被提交进仓库
+- 定位：`git status` 里看到一个不该出现的 `?? server/orders.json`
+- 修复：`path.join(__dirname, 'data', 'orders.json')`
+- 教训：**注释和代码不一致时，一定有一方是错的**。
+  这种「能用但不对」的 bug 最容易被忽略，靠的是提交前多看一眼 `git status`
 
 ### 手动验收清单
 
