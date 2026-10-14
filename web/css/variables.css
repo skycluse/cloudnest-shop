@@ -1,0 +1,119 @@
+/* ============================================================
+   variables.css —— CSS 变量（设计令牌 Design Tokens）
+   ------------------------------------------------------------
+   把颜色、字号、间距都定义成变量，好处：
+   1. 想换主题色，只改这一个地方
+   2. 名字有意义，看代码就知道是什么颜色
+   用法：color: var(--color-primary);
+   ============================================================ */
+
+:root {
+  /* ---------- 品牌色 ---------- */
+  --color-primary: #4f46e5;
+  --color-primary-dark: #4338ca;
+  --color-primary-light: #eef2ff;
+  --color-accent: #f59e0b;
+  --color-danger: #e11d48;
+  --color-success: #10b981;
+
+  /* ---------- 文字色 ---------- */
+  --color-text: #1f2937;
+  --color-text-sub: #6b7280;
+  --color-text-light: #9ca3af;
+  --color-text-invert: #ffffff;
+
+  /* ---------- 背景与边框 ---------- */
+  --color-bg: #ffffff;
+  --color-bg-soft: #f9fafb;
+  --color-bg-mute: #f3f4f6;
+  --color-border: #e5e7eb;
+  --color-border-strong: #d1d5db;
+
+  /* ---------- 阴影 ---------- */
+  --shadow-xs: 0 1px 2px rgba(16, 24, 40, 0.05);
+  --shadow-sm: 0 1px 3px rgba(16, 24, 40, 0.1), 0 1px 2px rgba(16, 24, 40, 0.06);
+  --shadow-md: 0 4px 12px rgba(16, 24, 40, 0.08), 0 2px 4px rgba(16, 24, 40, 0.04);
+  --shadow-lg: 0 12px 32px rgba(16, 24, 40, 0.12), 0 4px 8px rgba(16, 24, 40, 0.04);
+  --shadow-xl: 0 24px 48px rgba(16, 24, 40, 0.16);
+
+  /* ---------- 圆角 ---------- */
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+
+  /* ---------- 间距（8px 栅格） ---------- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* ---------- 字号 ----------
+     小技巧：正文用 clamp() 做流体字号，屏幕越小字越小，不用写媒体查询
+     clamp(最小值, 理想值, 最大值)
+  */
+  --fs-xs: 12px;
+  --fs-sm: 13px;
+  --fs-base: 15px;
+  --fs-md: 16px;
+  --fs-lg: 18px;
+  --fs-xl: 22px;
+  --fs-2xl: 28px;
+  --fs-3xl: clamp(26px, 3.2vw, 40px);
+  --fs-hero: clamp(30px, 5vw, 56px);
+
+  /* ---------- 字体 ---------- */
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+
+  /* ---------- 布局 ---------- */
+  --container-max: 1200px;
+  --header-h: 64px;
+  --drawer-w: 400px;
+
+  /* ---------- 过渡动画 ---------- */
+  --transition-fast: 0.15s ease;
+  --transition-base: 0.25s ease;
+  --transition-slow: 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* ---------- 层级（z-index）----------
+     集中管理，避免出现 z-index: 999999 这种失控写法
+  */
+  --z-header: 100;
+  --z-mask: 200;
+  --z-drawer: 210;
+  --z-modal: 300;
+  --z-agent: 400;
+  --z-toast: 500;
+}
+
+/* ---------- 暗色模式（跟着系统走） ---------- */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-text: #e5e7eb;
+    --color-text-sub: #9ca3af;
+    --color-text-light: #6b7280;
+
+    --color-bg: #111827;
+    --color-bg-soft: #1a2332;
+    --color-bg-mute: #1f2937;
+    --color-border: #2d3748;
+    --color-border-strong: #374151;
+
+    --color-primary-light: #1e1b4b;
+
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.45);
+    --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.55);
+    --shadow-xl: 0 24px 48px rgba(0, 0, 0, 0.6);
+  }
+}

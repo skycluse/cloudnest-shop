@@ -1,0 +1,18 @@
+{
+  "name": "cloudnest-shop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "云巢商城 CloudNest - 前端 + 后端 + AI 购物助手",
+  "main": "server/app.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server/app.js",
+    "dev": "node --watch server/app.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}

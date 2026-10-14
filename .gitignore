@@ -1,0 +1,29 @@
+# 依赖
+node_modules/
+
+# 环境变量（API Key 绝对不要提交！）
+.env
+.env.local
+
+# 日志
+*.log
+npm-debug.log*
+
+# 编辑器 / 系统
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+
+# 构建产物
+dist/
+build/
+
+# 数据库文件（如果有本地 sqlite）
+*.sqlite
+*.db
+
+# 运行时生成的订单数据（每次下单都会变，不该提交）
+# 这样保证别人 clone 下来是一个干净的、没有测试订单的项目
+server/data/orders.json

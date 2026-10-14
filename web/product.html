@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>商品详情 · 云巢商城 CloudNest</title>
+  <link rel="stylesheet" href="./css/reset.css" />
+  <link rel="stylesheet" href="./css/variables.css" />
+  <link rel="stylesheet" href="./css/layout.css" />
+  <link rel="stylesheet" href="./css/components.css" />
+  <link rel="stylesheet" href="./css/pages/product.css" />
+</head>
+<body>
+
+  <!-- ==================== 顶部导航栏 ==================== -->
+  <header class="site-header" id="siteHeader">
+    <div class="container header-inner">
+      <a class="logo" href="./index.html">
+        <span class="logo-mark">🪺</span>
+        <span class="logo-text">云巢商城</span>
+      </a>
+
+      <form class="search-box" id="searchForm" role="search">
+        <span class="search-icon">🔍</span>
+        <input type="search" id="searchInput" class="search-input"
+               placeholder="搜索商品，如：耳机、机械键盘、充电宝" autocomplete="off" />
+        <button type="submit" class="search-btn">搜索</button>
+      </form>
+
+      <nav class="header-actions">
+        <a class="icon-btn" href="./index.html#products" title="全部商品">
+          <span class="icon">📦</span><span class="icon-label">商品</span>
+        </a>
+        <a class="icon-btn" href="./orders.html" title="我的订单">
+          <span class="icon">📋</span><span class="icon-label">订单</span>
+        </a>
+        <button class="icon-btn cart-trigger" id="cartTrigger" type="button" title="购物车">
+          <span class="icon">🛒</span><span class="icon-label">购物车</span>
+          <span class="cart-badge" id="cartBadge" hidden>0</span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="container">
+      <!-- 面包屑导航 -->
+      <nav class="breadcrumb" aria-label="面包屑">
+        <a href="./index.html">首页</a>
+        <span class="breadcrumb-sep">/</span>
+        <a href="./index.html#products" id="crumbCategory">全部商品</a>
+        <span class="breadcrumb-sep">/</span>
+        <span class="breadcrumb-current" id="crumbName">商品详情</span>
+      </nav>
+
+      <!-- 商品详情主体：JS 渲染 -->
+      <div id="productDetail">
+        <p class="loading-text">商品加载中…</p>
+      </div>
+
+      <!-- 相关推荐 -->
+      <section class="section" id="relatedSection" hidden>
+        <div class="section-head">
+          <h2 class="section-title">同类商品推荐</h2>
+          <p class="section-sub">看看同分类下的其它选择</p>
+        </div>
+        <div class="product-grid" id="relatedGrid"></div>
+      </section>
+    </div>
+  </main>
+
+  <!-- ==================== 页脚 ==================== -->
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <span class="logo-mark">🪺</span>
+        <span class="logo-text">云巢商城 CloudNest</span>
+        <p class="footer-desc">桌面数码好物精选 · 项目演示站点，非真实商业网站</p>
+      </div>
+      <div class="footer-links">
+        <a href="./index.html#products">全部商品</a>
+        <a href="./orders.html">我的订单</a>
+        <a href="./index.html#categories">商品分类</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="container"><span>© 2026 云巢商城 · 学习项目演示</span></div>
+    </div>
+  </footer>
+
+  <!-- ==================== 侧拉购物车 ==================== -->
+  <div class="drawer-mask" id="drawerMask" hidden></div>
+  <aside class="cart-drawer" id="cartDrawer" aria-hidden="true">
+    <header class="drawer-head">
+      <h3 class="drawer-title">购物车 <span class="drawer-count" id="cartDrawerCount">(0)</span></h3>
+      <button class="drawer-close" id="cartClose" type="button" aria-label="关闭">✕</button>
+    </header>
+    <div class="drawer-body" id="cartBody"><p class="loading-text">购物车加载中…</p></div>
+    <footer class="drawer-foot">
+      <div class="cart-summary-row">
+        <span>合计</span>
+        <strong class="cart-total" id="cartTotal">¥0.00</strong>
+      </div>
+      <div class="drawer-actions">
+        <button class="btn btn-outline btn-block" id="cartClear" type="button">清空购物车</button>
+        <button class="btn btn-primary btn-block" id="cartCheckout" type="button">去结算</button>
+      </div>
+    </footer>
+  </aside>
+
+  <!-- ==================== 结算弹窗 ==================== -->
+  <div class="modal-mask" id="checkoutMask" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="checkoutTitle">
+      <header class="modal-head">
+        <h3 class="modal-title" id="checkoutTitle">填写收货信息</h3>
+        <button class="drawer-close" id="checkoutClose" type="button" aria-label="关闭">✕</button>
+      </header>
+      <form class="modal-body" id="checkoutForm" novalidate>
+        <div class="form-row">
+          <label class="form-label" for="ckName">收货人 <span class="required">*</span></label>
+          <input class="form-input" type="text" id="ckName" placeholder="请输入姓名" required />
+          <p class="form-error" id="errName"></p>
+        </div>
+        <div class="form-row">
+          <label class="form-label" for="ckPhone">手机号 <span class="required">*</span></label>
+          <input class="form-input" type="tel" id="ckPhone" placeholder="11 位手机号" required />
+          <p class="form-error" id="errPhone"></p>
+        </div>
+        <div class="form-row">
+          <label class="form-label" for="ckAddress">收货地址 <span class="required">*</span></label>
+          <textarea class="form-input" id="ckAddress" rows="3" placeholder="省 / 市 / 区 + 详细地址" required></textarea>
+          <p class="form-error" id="errAddress"></p>
+        </div>
+        <div class="form-row">
+          <label class="form-label" for="ckRemark">备注</label>
+          <input class="form-input" type="text" id="ckRemark" placeholder="选填，如：工作日送达" />
+        </div>
+        <div class="checkout-summary" id="checkoutSummary"></div>
+        <p class="form-error form-error-global" id="errGlobal"></p>
+      </form>
+      <footer class="modal-foot">
+        <button class="btn btn-ghost" id="checkoutCancel" type="button">取消</button>
+        <button class="btn btn-primary" id="checkoutSubmit" type="button">提交订单（模拟支付）</button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- ==================== 下单结果弹窗 ==================== -->
+  <div class="modal-mask" id="resultMask" hidden>
+    <div class="modal modal-result" role="dialog" aria-modal="true">
+      <div class="result-icon">✅</div>
+      <h3 class="result-title">下单成功！</h3>
+      <p class="result-desc">订单已提交（模拟支付），可在「我的订单」中查看</p>
+      <div class="result-info" id="resultInfo"></div>
+      <div class="result-actions">
+        <a class="btn btn-primary" id="resultViewOrder" href="./orders.html">查看订单</a>
+        <button class="btn btn-ghost" id="resultContinue" type="button">继续购物</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== AI 购物助手 ==================== -->
+  <button class="agent-fab" id="agentFab" type="button" title="AI 购物助手">
+    <span class="agent-fab-icon">✨</span>
+    <span class="agent-fab-text">AI 助手</span>
+  </button>
+
+  <section class="agent-panel" id="agentPanel" aria-hidden="true">
+    <header class="agent-head">
+      <div class="agent-head-left">
+        <span class="agent-avatar">✨</span>
+        <div>
+          <h3 class="agent-title">云巢 AI 购物助手</h3>
+          <p class="agent-status" id="agentStatus">在线 · 基于商城真实商品推荐</p>
+        </div>
+      </div>
+      <button class="drawer-close" id="agentClose" type="button" aria-label="关闭">✕</button>
+    </header>
+    <div class="agent-body" id="agentBody"></div>
+    <div class="agent-chips" id="agentChips"></div>
+    <form class="agent-input-row" id="agentForm">
+      <input class="agent-input" type="text" id="agentInput"
+             placeholder="例如：500 元以内的运动耳机有吗？" autocomplete="off" />
+      <button class="agent-send" type="submit" id="agentSend" aria-label="发送">➤</button>
+    </form>
+  </section>
+
+  <div class="toast-wrap" id="toastWrap"></div>
+
+  <script src="./js/api.js"></script>
+  <script src="./js/utils.js"></script>
+  <script src="./js/cart.js"></script>
+  <script src="./js/components.js"></script>
+  <script src="./js/agent.js"></script>
+  <script src="./js/product.js"></script>
+</body>
+</html>

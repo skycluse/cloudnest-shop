@@ -1,0 +1,229 @@
+/* ============================================================
+   layout.css —— 页面骨架布局
+   容器、header、footer、通用 section、网格
+   ============================================================ */
+
+/* ---------- 居中容器 ----------
+   响应式核心：宽度占满，但最大不超过 1200px，两侧留 padding
+*/
+.container {
+  width: 100%;
+  max-width: var(--container-max);
+  margin-inline: auto;          /* 左右自动外边距 = 水平居中 */
+  padding-inline: var(--space-5);
+}
+
+/* ---------- 顶部导航栏 ---------- */
+.site-header {
+  position: sticky;             /* 滚动时吸在顶部 */
+  top: 0;
+  z-index: var(--z-header);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);  /* 毛玻璃效果 */
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--color-border);
+  transition: box-shadow var(--transition-base);
+}
+
+/* 页面滚动后由 JS 加上这个类，出现阴影 */
+.site-header.is-scrolled {
+  box-shadow: var(--shadow-sm);
+}
+
+@media (prefers-color-scheme: dark) {
+  .site-header {
+    background: rgba(17, 24, 39, 0.85);
+  }
+}
+
+.header-inner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  height: var(--header-h);
+}
+
+/* 搜索框在中间，占满剩余空间 */
+.search-box {
+  flex: 1 1 auto;
+  max-width: 520px;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-left: auto;            /* 靠右 */
+}
+
+/* ---------- 通用 section ---------- */
+.section {
+  padding-block: var(--space-12);
+}
+
+.section-head {
+  margin-bottom: var(--space-6);
+}
+
+.loading-text {
+  color: var(--color-text-sub);
+  padding: var(--space-8) 0;
+  text-align: center;
+  grid-column: 1 / -1;          /* 在网格里占满一整行 */
+}
+
+.empty-text {
+  color: var(--color-text-sub);
+  padding: var(--space-10) var(--space-4);
+  text-align: center;
+  grid-column: 1 / -1;
+}
+
+/* ---------- 商品网格 ----------
+   auto-fill + minmax 是响应式的"魔法"：
+   每列最少 240px，能塞几列就塞几列，自动换行 —— 不用写一次媒体查询
+*/
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--space-5);
+}
+
+/* ---------- 分类网格 ---------- */
+.category-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: var(--space-4);
+}
+
+/* ---------- 页脚 ---------- */
+.site-footer {
+  margin-top: var(--space-16);
+  background: var(--color-bg-soft);
+  border-top: 1px solid var(--color-border);
+}
+
+.footer-inner {
+  display: flex;
+  flex-wrap: wrap;              /* 空间不够就换行 */
+  justify-content: space-between;
+  gap: var(--space-8);
+  padding-block: var(--space-10);
+}
+
+.footer-brand {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: 420px;
+}
+
+.footer-desc {
+  width: 100%;
+  font-size: var(--fs-sm);
+  color: var(--color-text-sub);
+  margin-top: var(--space-2);
+}
+
+.footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-6);
+  font-size: var(--fs-sm);
+  color: var(--color-text-sub);
+}
+
+.footer-links a:hover {
+  color: var(--color-primary);
+}
+
+.footer-bottom {
+  border-top: 1px solid var(--color-border);
+  padding-block: var(--space-4);
+  font-size: var(--fs-sm);
+  color: var(--color-text-light);
+}
+
+/* ---------- 分页 ---------- */
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-8);
+}
+
+/* ============================================================
+   响应式：媒体查询（Media Query）
+   ------------------------------------------------------------
+   断点策略（移动优先的思路，但这里是"桌面优先往下收"）：
+     >= 1024px  : 桌面，全部展开
+     768-1023px : 平板，导航精简
+     < 768px    : 手机，搜索框换行、字号缩小
+   ============================================================ */
+
+/* ---------- 平板 ---------- */
+@media (max-width: 1023px) {
+  .container {
+    padding-inline: var(--space-4);
+  }
+
+  .section {
+    padding-block: var(--space-10);
+  }
+}
+
+/* ---------- 手机 ---------- */
+@media (max-width: 767px) {
+  :root {
+    --header-h: auto;
+  }
+
+  /* 手机上 header 变成两行：第一行 logo + 图标，第二行搜索框 */
+  .header-inner {
+    flex-wrap: wrap;
+    padding-block: var(--space-3);
+    gap: var(--space-3);
+  }
+
+  .search-box {
+    order: 3;                   /* 排到最后 → 变成第二行 */
+    flex-basis: 100%;
+    max-width: none;
+  }
+
+  .icon-label {
+    display: none;              /* 手机上只留图标，省空间 */
+  }
+
+  .product-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: var(--space-3);
+  }
+
+  .category-grid {
+    grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+    gap: var(--space-3);
+  }
+
+  .section {
+    padding-block: var(--space-8);
+  }
+
+  .footer-inner {
+    flex-direction: column;
+    gap: var(--space-6);
+  }
+}
+
+/* ---------- 超小屏 ---------- */
+@media (max-width: 380px) {
+  .product-grid {
+    grid-template-columns: 1fr;   /* 一列铺满 */
+  }
+}

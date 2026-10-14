@@ -1,0 +1,367 @@
+/* ============================================================
+   pages/product.css —— 商品详情页样式
+   ============================================================ */
+
+/* ---------- 面包屑 ---------- */
+.breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding-block: var(--space-5);
+  font-size: var(--fs-sm);
+  color: var(--color-text-sub);
+}
+
+.breadcrumb a:hover {
+  color: var(--color-primary);
+}
+
+.breadcrumb-sep {
+  color: var(--color-text-light);
+}
+
+.breadcrumb-current {
+  color: var(--color-text);
+  font-weight: 600;
+  /* 商品名可能很长，超出就省略 */
+  max-width: 40ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- 详情主体：左右两栏 ---------- */
+.detail-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-10);
+  padding-bottom: var(--space-8);
+}
+
+/* 左：图片 */
+.detail-gallery {
+  flex: 1 1 380px;
+  min-width: 0;
+}
+
+.detail-image-box {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  background: var(--color-bg-soft);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.detail-image-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: var(--space-10);
+  transition: transform var(--transition-slow);
+}
+
+.detail-image-box:hover img {
+  transform: scale(1.05);
+}
+
+/* 右：信息 */
+.detail-info {
+  flex: 1 1 400px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.detail-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--fs-sm);
+  color: var(--color-text-sub);
+}
+
+.brand-badge {
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-xs);
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  font-weight: 700;
+  font-size: var(--fs-xs);
+}
+
+.detail-title {
+  font-size: var(--fs-2xl);
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.detail-tagline {
+  font-size: var(--fs-md);
+  color: var(--color-text-sub);
+}
+
+/* 价格区 */
+.detail-price-box {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  background: linear-gradient(135deg, #fff7ed, var(--color-bg-soft));
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.detail-price {
+  font-size: var(--fs-3xl);
+  font-weight: 800;
+  color: var(--color-danger);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.detail-price .unit {
+  font-size: var(--fs-lg);
+  margin-right: 2px;
+}
+
+.detail-rating {
+  font-size: var(--fs-sm);
+  color: var(--color-text-sub);
+}
+
+.detail-rating .stars {
+  color: var(--color-accent);
+  font-size: var(--fs-md);
+  letter-spacing: 1px;
+}
+
+/* 元信息列表 */
+.detail-meta-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--color-bg-soft);
+  border-radius: var(--radius-md);
+  font-size: var(--fs-sm);
+}
+
+.detail-meta-row {
+  display: flex;
+  gap: var(--space-4);
+}
+
+.detail-meta-label {
+  width: 68px;
+  flex-shrink: 0;
+  color: var(--color-text-sub);
+}
+
+.detail-meta-value {
+  font-weight: 600;
+  min-width: 0;
+}
+
+/* 库存状态 */
+.stock-ok    { color: var(--color-success); }
+.stock-low   { color: var(--color-accent); }
+.stock-out   { color: var(--color-danger); }
+
+/* 数量选择 + 加购 */
+.detail-buy-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.detail-qty-label {
+  font-size: var(--fs-sm);
+  color: var(--color-text-sub);
+}
+
+.detail-buy-row .qty-stepper {
+  height: 44px;
+}
+
+.detail-buy-row .qty-btn {
+  width: 40px;
+  height: 42px;
+  font-size: 18px;
+}
+
+.detail-buy-row .qty-value {
+  min-width: 46px;
+  font-size: var(--fs-md);
+}
+
+.detail-buy-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.detail-buy-actions .btn {
+  flex: 1 1 180px;
+  height: 48px;
+  font-size: var(--fs-md);
+}
+
+/* 服务承诺 */
+.detail-services {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
+  font-size: var(--fs-xs);
+  color: var(--color-text-sub);
+}
+
+.detail-service {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+/* ---------- 详情介绍区 ---------- */
+.detail-tabs {
+  margin-top: var(--space-10);
+  border-top: 1px solid var(--color-border);
+}
+
+.detail-section {
+  padding-block: var(--space-8);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.detail-section-title {
+  font-size: var(--fs-xl);
+  margin-bottom: var(--space-4);
+}
+
+.detail-desc-text {
+  font-size: var(--fs-md);
+  line-height: 1.9;
+  color: var(--color-text-sub);
+  max-width: 76ch;
+}
+
+/* 规格参数表 */
+.spec-table {
+  width: 100%;
+  max-width: 620px;
+  border-collapse: collapse;
+  font-size: var(--fs-sm);
+}
+
+.spec-table tr {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.spec-table th,
+.spec-table td {
+  padding: var(--space-3) var(--space-4);
+  text-align: left;
+}
+
+.spec-table th {
+  width: 150px;
+  background: var(--color-bg-soft);
+  color: var(--color-text-sub);
+  font-weight: 600;
+}
+
+.spec-table td {
+  font-weight: 600;
+}
+
+/* 标签云 */
+.detail-tag-cloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.detail-tag-cloud .tag {
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--fs-sm);
+  border-radius: var(--radius-full);
+  background: var(--color-bg-mute);
+}
+
+.detail-tag-cloud .tag:hover {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  cursor: pointer;
+}
+
+/* 错误态 */
+.detail-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-16) var(--space-4);
+  text-align: center;
+  color: var(--color-text-sub);
+}
+
+.detail-error-icon {
+  font-size: 56px;
+}
+
+/* ============================================================
+   响应式
+   ============================================================ */
+@media (max-width: 1023px) {
+  .detail-wrap {
+    gap: var(--space-6);
+  }
+
+  .detail-image-box img {
+    padding: var(--space-6);
+  }
+}
+
+@media (max-width: 767px) {
+  .detail-title {
+    font-size: var(--fs-xl);
+  }
+
+  .detail-price {
+    font-size: var(--fs-2xl);
+  }
+
+  .detail-image-box img {
+    padding: var(--space-5);
+  }
+
+  .detail-buy-actions .btn {
+    flex: 1 1 100%;
+  }
+
+  .detail-buy-row {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .spec-table th {
+    width: 96px;
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--fs-xs);
+  }
+
+  .spec-table td {
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .breadcrumb-current {
+    max-width: 20ch;
+  }
+}

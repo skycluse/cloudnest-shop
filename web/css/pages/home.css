@@ -1,0 +1,163 @@
+/* ============================================================
+   pages/home.css —— 首页专属样式
+   ============================================================ */
+
+/* ---------- Hero 横幅 ---------- */
+.hero {
+  background: linear-gradient(160deg, var(--color-primary-light) 0%, var(--color-bg) 70%);
+  border-bottom: 1px solid var(--color-border);
+  overflow: hidden;
+}
+
+.hero-inner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-10);
+  padding-block: var(--space-16);
+}
+
+.hero-text {
+  flex: 1 1 380px;
+  min-width: 0;
+}
+
+.hero-eyebrow {
+  display: inline-block;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  color: var(--color-primary);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  margin-bottom: var(--space-4);
+}
+
+.hero-title {
+  font-size: var(--fs-hero);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.hero-desc {
+  margin-top: var(--space-4);
+  max-width: 46ch;
+  font-size: var(--fs-md);
+  color: var(--color-text-sub);
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-8);
+}
+
+/* ---------- Hero 右侧装饰图形 ----------
+   纯 CSS 做的，不依赖图片，加载快
+*/
+.hero-art {
+  position: relative;
+  flex: 1 1 320px;
+  height: 320px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hero-blob {
+  width: 260px;
+  height: 260px;
+  border-radius: 42% 58% 63% 37% / 41% 44% 56% 59%;
+  background: linear-gradient(135deg, #818cf8, #c084fc);
+  opacity: 0.28;
+  animation: blobMorph 12s ease-in-out infinite;
+}
+
+@keyframes blobMorph {
+  0%, 100% { border-radius: 42% 58% 63% 37% / 41% 44% 56% 59%; transform: rotate(0deg); }
+  50%      { border-radius: 58% 42% 37% 63% / 56% 59% 41% 44%; transform: rotate(12deg); }
+}
+
+.hero-emoji {
+  position: absolute;
+  font-size: 46px;
+  filter: drop-shadow(0 8px 16px rgba(79, 70, 229, 0.25));
+  animation: floatY 4s ease-in-out infinite;
+}
+
+.hero-emoji-1 { top: 12%;  left: 16%;  animation-delay: 0s; }
+.hero-emoji-2 { top: 46%;  right: 14%; animation-delay: 0.8s; font-size: 40px; }
+.hero-emoji-3 { bottom: 12%; left: 30%; animation-delay: 1.6s; font-size: 36px; }
+
+@keyframes floatY {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-14px); }
+}
+
+/* ---------- 商品数量提示 ---------- */
+#productsSub {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============================================================
+   响应式
+   ============================================================ */
+@media (max-width: 1023px) {
+  .hero-inner {
+    padding-block: var(--space-12);
+  }
+
+  .hero-art {
+    flex-basis: 260px;
+    height: 260px;
+  }
+
+  .hero-blob {
+    width: 200px;
+    height: 200px;
+  }
+
+  .hero-emoji {
+    font-size: 38px;
+  }
+}
+
+@media (max-width: 767px) {
+  /* 手机上把装饰图形藏掉，把空间让给文字，视觉更干净 */
+  .hero-art {
+    display: none;
+  }
+
+  .hero-inner {
+    padding-block: var(--space-10);
+  }
+
+  .hero-actions .btn {
+    flex: 1 1 auto;
+  }
+
+  .filter-bar {
+    gap: var(--space-3);
+  }
+
+  /* 筛选控件在手机上各占一行或半行 */
+  .filter-group {
+    flex: 1 1 140px;
+  }
+
+  .filter-select,
+  .filter-input {
+    width: 100%;
+  }
+
+  .price-range .filter-input {
+    width: 100%;
+  }
+
+  #filterReset {
+    flex: 1 1 100%;
+  }
+}
