@@ -1,4 +1,4 @@
-# 🪺 云巢商城 CloudNest
+﻿# 🪺 云巢商城 CloudNest
 
 > 26 云屋三面前端（+ AI Agent 开发）项目考核作业
 > 一个包含**前端 + 后端 + 商品数据 + 完整购物流程 + AI 购物助手**的商城项目。
@@ -145,7 +145,44 @@ cloudnest-shop/
 
 ---
 
-## 五、接口设计
+## 五、页面效果
+
+### 首页（桌面端 1440px）
+
+![首页](docs/screenshots/01-home-desktop.png)
+
+包含：顶部导航栏、Hero 横幅、6 个分类入口、筛选工具条、商品网格（售罄商品有遮罩标记）、AI 助手浮窗。
+
+### 商品详情页
+
+![商品详情](docs/screenshots/02-product-detail.png)
+
+包含：面包屑、商品图、名称、价格、分类、品牌、库存状态、数量步进器、加购/立即购买按钮、商品介绍、规格参数表、相关标签、同类推荐。
+
+### 侧拉式购物车
+
+![购物车](docs/screenshots/06-cart-drawer.png)
+
+从右侧滑出；支持改数量、删除、查看单项小计与总金额（图中 ¥299 + ¥899 = ¥1198）。
+
+### AI 购物助手
+
+![AI 助手](docs/screenshots/07-ai-agent.png)
+
+支持多轮对话、商品卡片（带「加购」按钮）、工具调用过程面板（「执行了 N 个步骤」可展开）、快捷问题 Chips。
+
+### 响应式
+
+| 平板（820px） | 手机（390px） |
+|---|---|
+| ![平板](docs/screenshots/05-home-tablet.png) | ![手机](docs/screenshots/04-home-mobile.png) |
+
+> 已在 **320px ~ 2560px** 共 8 档视口下验证：`scrollWidth === clientWidth`，
+> **无横向溢出**，符合考核 3.9「50%–250% 缩放下布局不错乱」的要求。
+
+---
+
+## 六、接口设计
 
 所有接口统一返回 `{ code, message, data }`，`code === 0` 表示成功。
 
@@ -199,7 +236,7 @@ cloudnest-shop/
 
 ---
 
-## 六、前端如何与后端通信
+## 七、前端如何与后端通信
 
 这是考核第六节要求说明的内容：
 
@@ -225,7 +262,7 @@ cloudnest-shop/
 
 ---
 
-## 七、AI 购物助手
+## 八、AI 购物助手
 
 ### 7.1 设计思路
 
@@ -280,7 +317,7 @@ Agent 的核心循环是：**理解需求 → 选择工具 → 调用工具 → 
 
 ---
 
-## 八、测试
+## 九、测试
 
 ### 测试覆盖
 
@@ -336,6 +373,22 @@ jsdom 测试显示「无 JS 报错、通过 4 项」，但实际上页面什么�
 - 定位：写诊断脚本打印 `typeof window.api`，发现是 `undefined`
 - 教训：**「没有报错」不等于「功能正常」**，断言必须检查真实渲染结果
 
+**Bug 5：弹窗在页面一打开时就全部显示（CSS 优先级问题）**
+
+用无头浏览器截图时发现，首页一加载，结算弹窗和「下单成功」弹窗就**全部盖在页面上**。
+- 原因：HTML 里写的是 `<div class="modal-mask" hidden>`，本意是隐藏。
+  但浏览器默认样式 `[hidden] { display: none }` 的优先级很低，
+  被我们自己写的 `.modal-mask { display: flex }` 覆盖掉了，于是弹窗照常显示。
+- 定位：**靠截图发现的**。单元测试和运行时测试都发现不了 ——
+  因为在 JS 层面确实「正确」地把 `hidden` 属性设上了，是 CSS 让它失效了。
+- 修复：在 `reset.css` 里加：
+  ```css
+  [hidden] { display: none !important; }
+  ```
+  这是少数几个用 `!important` 合理的场景：`hidden` 的语义不该被任何布局样式覆盖。
+- 教训：**自动化测试通过 ≠ 界面正确**。视觉问题必须靠「看」来发现，
+  所以我把各页面的截图保留在 `docs/screenshots/` 里。
+
 ### 手动验收清单
 
 - [ ] 首页能加载 24 个商品，6 个分类
@@ -353,7 +406,7 @@ jsdom 测试显示「无 JS 报错、通过 4 项」，但实际上页面什么�
 
 ---
 
-## 九、AI Coding Process
+## 十、AI Coding Process
 
 本项目大量使用 AI Coding 工具（DeepSeek Harness）辅助开发。以下选 3 个有代表性的任务说明。
 
@@ -432,7 +485,7 @@ POST /api/orders  →  totalPrice = 997 ✓  库存 42 → 40 ✓
 
 ---
 
-## 十、已知不足与后续计划
+## 十一、已知不足与后续计划
 
 诚实列出当前没做完的部分：
 
@@ -445,7 +498,7 @@ POST /api/orders  →  totalPrice = 997 ✓  库存 42 → 40 ✓
 
 ---
 
-## 十一、参考
+## 十二、参考
 
 - [Node.js 官方文档](https://nodejs.org/docs/latest/api/)
 - [Express 4 中文文档](https://expressjs.com/zh-cn/)
@@ -454,6 +507,6 @@ POST /api/orders  →  totalPrice = 997 ✓  库存 42 → 40 ✓
 
 ---
 
-## 十二、License
+## 十三、License
 
 本项目为学习 / 考核用途，非真实商业网站。

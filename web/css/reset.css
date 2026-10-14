@@ -93,6 +93,23 @@ input[type="number"] {
   border: 0;
 }
 
+/* ============================================================
+   【重要】让 HTML 的 hidden 属性真正生效
+   ------------------------------------------------------------
+   踩过的坑：
+   HTML 里写 <div class="modal-mask" hidden> 本来应该是隐藏的，
+   浏览器默认样式是 [hidden] { display: none }。
+   但是它的优先级**低于**我们自己写的 .modal-mask { display: flex }，
+   结果弹窗和遮罩在页面一打开时就全部显示出来了。
+
+   解决：用 [hidden] 属性选择器 + !important 强制生效。
+   这是少数几个用 !important 是合理的场景 —— 因为「hidden 就该隐藏」
+   这个语义不该被任何布局样式覆盖。
+   ============================================================ */
+[hidden] {
+  display: none !important;
+}
+
 /* 尊重用户的"减少动效"系统设置 */
 @media (prefers-reduced-motion: reduce) {
   *,
