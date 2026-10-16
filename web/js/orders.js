@@ -51,7 +51,9 @@ function orderCardHtml(order) {
 
   /* ---- 备注 ---- */
   var remarkHtml = order.remark
-    ? '<div class="order-remark">📝 备注：' + utils.escapeHtml(order.remark) + '</div>'
+    ? '<div class="order-remark">' +
+        window.icons.icon('fileText', 14) + ' 备注：' +
+        utils.escapeHtml(order.remark) + '</div>'
     : '';
 
   return (
@@ -101,7 +103,7 @@ function renderOrdersList(orders) {
     if (sub) sub.textContent = '还没有任何订单';
     container.innerHTML =
       '<div class="orders-empty">' +
-        '<div class="orders-empty-icon">📋</div>' +
+        '<div class="orders-empty-icon">' + window.icons.icon('receipt', 34) + '</div>' +
         '<h3>还没有订单</h3>' +
         '<p>去商城挑几件喜欢的商品吧</p>' +
         '<a class="btn btn-primary" href="./index.html#products">去逛逛</a>' +
@@ -223,7 +225,7 @@ async function loadAllOrders() {
     if (container) {
       container.innerHTML =
         '<div class="orders-empty">' +
-          '<div class="orders-empty-icon">😵</div>' +
+          '<div class="orders-empty-icon">' + window.icons.icon('alertCircle', 34) + '</div>' +
           '<h3>订单加载失败</h3>' +
           '<p>' + utils.escapeHtml(err.message) + '</p>' +
           '<button class="btn btn-primary" onclick="location.reload()">重新加载</button>' +
@@ -253,7 +255,7 @@ async function loadSingleOrder(orderId) {
     if (container) {
       container.innerHTML =
         '<div class="orders-empty">' +
-          '<div class="orders-empty-icon">🔍</div>' +
+          '<div class="orders-empty-icon">' + window.icons.icon('folderSearch', 34) + '</div>' +
           '<h3>没找到这个订单</h3>' +
           '<p>订单号：' + utils.escapeHtml(orderId) + '</p>' +
           '<p>' + utils.escapeHtml(err.message) + '</p>' +

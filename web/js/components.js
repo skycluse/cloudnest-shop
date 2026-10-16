@@ -93,7 +93,7 @@ function renderProductGrid(container, products, emptyMessage) {
   if (!products || products.length === 0) {
     el.innerHTML =
       '<div class="empty-text">' +
-        '<div style="font-size:40px;margin-bottom:8px;">🔍</div>' +
+        '<div class="empty-icon">' + window.icons.icon('folderSearch', 40) + '</div>' +
         utils.escapeHtml(emptyMessage || '没有找到相关商品') +
       '</div>';
     return;
@@ -141,10 +141,12 @@ function renderCategoryGrid(container, categories, activeId) {
   for (var i = 0; i < categories.length; i++) {
     var c = categories[i];
     var isActive = activeId && activeId === c.id;
+
+    // c.icon 现在是图标名（如 'headphones'），用它去取 SVG
     html +=
       '<button class="category-card' + (isActive ? ' is-active' : '') + '" ' +
               'type="button" data-category="' + utils.escapeHtml(c.id) + '">' +
-        '<span class="category-icon">' + c.icon + '</span>' +
+        '<span class="category-icon">' + window.icons.icon(c.icon, 28) + '</span>' +
         '<span class="category-name">' + utils.escapeHtml(c.name) + '</span>' +
         '<span class="category-count">' + c.count + ' 件</span>' +
       '</button>';
@@ -222,7 +224,7 @@ function renderCartDrawer() {
   if (items.length === 0) {
     body.innerHTML =
       '<div class="cart-empty">' +
-        '<div class="cart-empty-icon">🛒</div>' +
+        '<div class="cart-empty-icon">' + window.icons.icon('shoppingCart', 32) + '</div>' +
         '<p>购物车还是空的</p>' +
         '<button class="btn btn-primary btn-sm" type="button" data-goto-products>去逛逛</button>' +
       '</div>';
@@ -542,6 +544,18 @@ function closeOrderResult() {
    ============================================================ */
 
 function initGlobalComponents() {
+  /* ---------- 渲染页面里所有 SVG 图标 ----------
+     这个必须放在最前面。
+     HTML 里写的是 <span data-icon="shoppingCart"></span> 这种占位，
+     这里统一把它们填成真正的 SVG 图标。
+     放最前面是因为：后面的事件绑定可能依赖图标已经渲染好。
+  */
+  if (window.icons && typeof window.icons.hydrate === 'function') {
+    window.icons.hydrate();
+  } else {
+    console.warn('icons.js 没有加载，页面图标将无法显示');
+  }
+
   /* ---------- 购物车抽屉 ---------- */
   var cartTrigger = utils.$('#cartTrigger');
   if (cartTrigger) cartTrigger.addEventListener('click', openCartDrawer);
@@ -713,7 +727,7 @@ async function addProductToCartById(productId, btn) {
     var result = cart.add(product, 1);
 
     if (result.ok) {
-      utils.toast('已加入购物车 ✓', 'success');
+      utils.toast('已加入购物车', 'success');
       // 加购后自动打开购物车，用户能立刻看到结果
       openCartDrawer();
     } else {

@@ -1,4 +1,4 @@
-/* ============================================================
+﻿/* ============================================================
    agent.js —— AI 购物助手（前端）
    ------------------------------------------------------------
    【这个文件的定位，你要先搞清楚】
@@ -384,7 +384,7 @@ async function runIntent(need) {
     /* ---------- 超范围请求 ---------- */
     case 'out_of_scope':
       return {
-        text: '不好意思，我是云巢商城的购物助手，只能帮你解决商城相关的问题 😊\n\n' +
+        text: '不好意思，我是云巢商城的购物助手，只能帮你解决商城相关的问题\n\n' +
               '比如你可以问我：\n' +
               '· 500 元以内的运动耳机有吗？\n' +
               '· 推荐一个适合办公的机械键盘\n' +
@@ -394,7 +394,7 @@ async function runIntent(need) {
     /* ---------- 提示词注入 ---------- */
     case 'prompt_injection':
       return {
-        text: '这个我没法照做哦 🙅\n\n' +
+        text: '这个我没法照做哦\n\n' +
               '我是云巢商城的购物助手，所有商品价格都来自商城的真实数据，' +
               '不能修改价格、也不能给出违反商城规则的承诺。\n\n' +
               '如果你有购物需求，我很乐意帮忙挑选商品～'
@@ -403,7 +403,7 @@ async function runIntent(need) {
     /* ---------- 需求太模糊，追问澄清 ---------- */
     case 'ambiguous':
       return {
-        text: '没问题，不过云巢商城的商品还挺多的，我想先了解一下你的需求，这样推荐更准 🙂\n\n' +
+        text: '没问题，不过云巢商城的商品还挺多的，我想先了解一下你的需求，这样推荐更准\n\n' +
               '可以告诉我：\n' +
               '1. 你想买哪一类商品？（耳机 / 键盘 / 鼠标 / 充电储能 / 智能家居 / 配件）\n' +
               '2. 大概的预算范围是多少？\n' +
@@ -417,7 +417,7 @@ async function runIntent(need) {
 
       if (cartData.items.length === 0) {
         return {
-          text: '你的购物车目前是空的 🛒\n\n要我帮你推荐点什么吗？',
+          text: '你的购物车目前是空的\n\n要我帮你推荐点什么吗？',
           steps: steps
         };
       }
@@ -502,7 +502,7 @@ async function runIntent(need) {
       if (!base || (!base.category && !base.keyword)) {
         return {
           text: '好的！不过我还不知道你想买哪类商品，方便说一下吗？\n' +
-                '比如"耳机"、"键盘"，我再帮你找便宜的 😊'
+                '比如"耳机"、"键盘"，我再帮你找便宜的'
         };
       }
 
@@ -580,7 +580,7 @@ async function runIntent(need) {
           : '暂无';
 
         return {
-          text: '「' + categoryLabel + '」里更便宜的选择确实没有了 😅\n\n' +
+          text: '「' + categoryLabel + '」里更便宜的选择确实没有了\n\n' +
                 '刚才推荐里最便宜的是 ¥' + cheapestText +
                 '，它已经是全分类的最低价了。\n\n' +
                 '两个建议：\n' +
@@ -642,7 +642,7 @@ async function runIntent(need) {
         target = guessed.items[0];
       }
 
-      // ★★★ 写操作必须先确认（考核 9.4 第 2 条）★★★
+      // [重要] 写操作必须先确认（考核 9.4 第 2 条）
       agentState.pendingAction = {
         type: 'add_to_cart',
         productId: target.id,
@@ -664,12 +664,12 @@ async function runIntent(need) {
 
       if (cartData2.items.length === 0) {
         return {
-          text: '购物车还是空的，先挑点商品吧 🛒\n\n' +
+          text: '购物车还是空的，先挑点商品吧\n\n' +
                 '你可以说"推荐 500 元以内的耳机"，我帮你找。'
         };
       }
 
-      // ★★★ 写操作必须先确认 ★★★
+      // [重要] 写操作必须先确认
       agentState.pendingAction = {
         type: 'create_order',
         totalPrice: cartData2.totalPrice,
@@ -686,7 +686,7 @@ async function runIntent(need) {
     /* ---------- 用户确认 ---------- */
     case 'confirm': {
       if (!agentState.pendingAction) {
-        return { text: '好的 👍 你还有什么想了解的？比如"1000 元以内的机械键盘"。' };
+        return { text: '好的 你还有什么想了解的？比如"1000 元以内的机械键盘"。' };
       }
       return await executePendingAction(steps);
     }
@@ -695,9 +695,9 @@ async function runIntent(need) {
     case 'cancel': {
       if (agentState.pendingAction) {
         agentState.pendingAction = null;
-        return { text: '好的，已经取消了 👌 需要我帮你看看别的吗？' };
+        return { text: '好的，已经取消了 需要我帮你看看别的吗？' };
       }
-      return { text: '好的 👌 有需要随时叫我。' };
+      return { text: '好的 有需要随时叫我。' };
     }
 
     default:
@@ -730,7 +730,7 @@ async function executePendingAction(steps) {
     components.openCartDrawer();
 
     return {
-      text: '已经帮你加进购物车了 ✅\n\n' +
+      text: '已经帮你加进购物车了\n\n' +
             '· ' + added.product.name + ' × ' + added.quantity +
             '（¥' + utils.formatPrice(added.product.price * added.quantity) + '）\n\n' +
             '购物车右侧已经打开了，你可以直接去结算，或者让我帮你下单。',
@@ -748,7 +748,7 @@ async function executePendingAction(steps) {
     components.showOrderResult(order);
 
     return {
-      text: '下单成功 🎉\n\n' +
+      text: '下单成功\n\n' +
             '· 订单编号：' + order.id + '\n' +
             '· 商品件数：' + order.itemCount + ' 件\n' +
             '· 订单总价：¥' + utils.formatPrice(order.totalPrice) + '\n' +
@@ -849,12 +849,12 @@ async function runComboPlan(need, steps) {
 
     // 组装回复
     var lines = [];
-    lines.push('我帮你算了一下 💡 预算 ¥' + utils.formatPrice(budget) + '，同品牌组合的最优解是：');
+    lines.push('我帮你算了一下 预算 ¥' + utils.formatPrice(budget) + '，同品牌组合的最优解是：');
     lines.push('');
     lines.push('【方案一 · 同品牌推荐】');
     lines.push('· 耳机：' + best.earphone.name + ' — ¥' + utils.formatPrice(best.earphone.price));
     lines.push('· 键盘：' + best.keyboard.name + ' — ¥' + utils.formatPrice(best.keyboard.price));
-    lines.push('· 品牌：' + best.brand + '（两者同品牌 ✅）');
+    lines.push('· 品牌：' + best.brand + '（两者同品牌）');
     lines.push('· 合计：¥' + utils.formatPrice(best.total) +
                '，预算剩余 ¥' + utils.formatPrice(best.remaining));
 
@@ -919,7 +919,7 @@ async function runComboPlan(need, steps) {
   crossPlans.sort(function (x, y) { return y.total - x.total; });
 
   var out = [];
-  out.push('我认真算了一下，在 ¥' + utils.formatPrice(budget) + ' 预算内**没有同一品牌**的耳机 + 键盘组合 😥');
+  out.push('我认真算了一下，在 ¥' + utils.formatPrice(budget) + ' 预算内**没有同一品牌**的耳机 + 键盘组合');
   out.push('');
   out.push('原因是：云巢的耳机和键盘都有，但声阔的耳机偏贵、键盘不便宜，两边价格凑不到一起。');
   out.push('');
@@ -1051,7 +1051,7 @@ function buildNoResultText(need) {
   } else {
     parts.push('符合这个条件的商品');
   }
-  parts.push('暂时没有找到 😥\n\n');
+  parts.push('暂时没有找到\n\n');
 
   parts.push('几个建议：\n');
   if (need.budget) {
@@ -1082,7 +1082,7 @@ function appendMessage(role, text, products, steps) {
   el.className = 'msg msg-' + role;
 
   var avatarHtml = role === 'assistant'
-    ? '<div class="msg-avatar">✨</div>'
+    ? '<div class="msg-avatar">' + window.icons.icon('sparkles', 15) + '</div>'
     : '';
 
   // 工具调用过程：可折叠面板（考核 9.5 第 4 条要求展示思考过程）
@@ -1092,7 +1092,7 @@ function appendMessage(role, text, products, steps) {
     for (var i = 0; i < steps.length; i++) {
       inner +=
         '<div class="tool-step">' +
-          '<span class="tool-step-icon">🔧</span>' +
+          '<span class="tool-step-icon">' + window.icons.icon('wrench', 12) + '</span>' +
           '<span class="tool-step-body">' +
             '<span class="tool-step-name">' + utils.escapeHtml(steps[i].name) + '</span>' +
             '(' + utils.escapeHtml(steps[i].args) + ')<br />' +
@@ -1150,7 +1150,7 @@ function appendTyping() {
   el.className = 'msg msg-assistant';
   el.setAttribute('data-typing', '1');
   el.innerHTML =
-    '<div class="msg-avatar">✨</div>' +
+    '<div class="msg-avatar">' + window.icons.icon('sparkles', 15) + '</div>' +
     '<div class="msg-bubble">' +
       '<span class="typing-dots"><span></span><span></span><span></span></span>' +
     '</div>';
@@ -1219,7 +1219,7 @@ function openAgent() {
   if (agentState.messages.length === 0) {
     appendMessage(
       'assistant',
-      '你好！我是云巢商城的 AI 购物助手 ✨\n\n' +
+      '你好！我是云巢商城的 AI 购物助手。\n\n' +
       '我可以帮你：\n' +
       '· 按预算和需求找商品\n' +
       '· 比较不同商品的差别\n' +

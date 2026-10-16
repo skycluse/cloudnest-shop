@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 商品种子数据（种子 = seed，就是"初始造好的数据"）
  * ------------------------------------------------------------
  * 考核要求：15~30 个商品，彼此有差异，不能硬编码在前端。
@@ -19,13 +19,23 @@
  *   rating    评分 0~5
  */
 
+/**
+ * 分类数据。
+ *
+ * icon 字段存的是【图标名】，不是 emoji 字符。
+ * 前端会用这个名字去 icons.js 里取对应的 SVG 路径。
+ *
+ * 为什么不在后端直接返回 SVG？
+ * 因为后端不该关心"长什么样"，它只负责提供数据。
+ * 具体用哪个图标、多大尺寸、什么颜色，是前端的事 —— 这是关注点分离。
+ */
 const categories = [
-  { id: 'audio', name: '耳机音频', icon: '🎧' },
-  { id: 'keyboard', name: '键盘外设', icon: '⌨️' },
-  { id: 'mouse', name: '鼠标', icon: '🖱️' },
-  { id: 'power', name: '充电储能', icon: '🔋' },
-  { id: 'smart', name: '智能家居', icon: '💡' },
-  { id: 'accessory', name: '配件周边', icon: '🧩' }
+  { id: 'audio', name: '耳机音频', icon: 'headphones' },
+  { id: 'keyboard', name: '键盘外设', icon: 'keyboard' },
+  { id: 'mouse', name: '鼠标', icon: 'mouse' },
+  { id: 'power', name: '充电储能', icon: 'batteryCharging' },
+  { id: 'smart', name: '智能家居', icon: 'lightbulb' },
+  { id: 'accessory', name: '配件周边', icon: 'puzzle' }
 ];
 
 const products = [

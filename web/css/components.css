@@ -1,7 +1,32 @@
-/* ============================================================
+﻿/* ============================================================
    components.css —— 可复用组件
    导航、按钮、商品卡片、购物车抽屉、弹窗、Toast、AI 面板
    ============================================================ */
+
+/* ============================================================
+   0. SVG 图标通用样式
+   ------------------------------------------------------------
+   所有通过 icons.js 渲染出来的图标都带 .icon-svg 类。
+
+   关键点：
+   - display:block 去掉 inline 元素底部那 3~4px 的基线空隙
+     （这是图标和文字对齐总是差几像素的常见原因）
+   - flex-shrink:0 防止图标在窄容器里被压扁
+   - 颜色不用写：SVG 里是 stroke="currentColor"，
+     会自动继承父元素的 color，所以悬浮变色、暗色模式全自动生效
+   ============================================================ */
+.icon-svg {
+  display: block;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+
+/* 图标 + 文字并排时的通用容器 */
+.icon-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
 
 /* ============================================================
    1. Logo
@@ -22,8 +47,14 @@
 }
 
 .logo-mark {
-  font-size: 24px;
-  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary-light);
+  color: var(--color-primary);
 }
 
 /* ============================================================
@@ -32,9 +63,10 @@
 .search-icon {
   position: absolute;
   left: 14px;
-  font-size: 15px;
+  display: flex;
+  align-items: center;
+  color: var(--color-text-light);
   pointer-events: none;      /* 让点击穿透到 input */
-  opacity: 0.55;
 }
 
 .search-input {
@@ -100,7 +132,9 @@
 }
 
 .icon-btn .icon {
-  font-size: 19px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   line-height: 1.1;
   transition: transform var(--transition-base);
 }
@@ -369,8 +403,41 @@
 }
 
 .product-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
   font-size: var(--fs-xs);
   color: var(--color-text-sub);
+  white-space: nowrap;
+}
+
+/* ============================================================
+   星级评分
+   ------------------------------------------------------------
+   星星用 SVG 画，不用 ★☆ 文字符号。
+   原因和不用 emoji 一样：文字符号在不同系统里
+   粗细、大小、基线位置都不同，很难对齐。
+   ============================================================ */
+.stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--color-accent);
+  flex-shrink: 0;
+}
+
+.star {
+  display: block;
+  flex-shrink: 0;
+}
+
+/* 实心星星稍亮一点，空心星星淡一些，层次更清楚 */
+.star.is-filled {
+  color: var(--color-accent);
+}
+
+.star:not(.is-filled) {
+  color: var(--color-border-strong);
 }
 
 /* 标签行 */
@@ -434,9 +501,16 @@
 }
 
 .category-icon {
-  font-size: 28px;
-  line-height: 1;
-  transition: transform var(--transition-base);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-sub);
+  transition: transform var(--transition-base), color var(--transition-base);
+}
+
+.category-card:hover .category-icon,
+.category-card.is-active .category-icon {
+  color: var(--color-primary);
 }
 
 .category-card:hover .category-icon {
@@ -814,9 +888,16 @@
   text-align: center;
 }
 
+/* 空状态图标：用圆形底衬托，比裸图标更耐看 */
 .cart-empty-icon {
-  font-size: 44px;
-  opacity: 0.5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  border-radius: var(--radius-full);
+  background: var(--color-bg-mute);
+  color: var(--color-text-light);
 }
 
 /* ============================================================
@@ -971,9 +1052,16 @@
   align-items: center;
 }
 
+/* 下单成功的对勾：绿色圆形徽章 */
 .result-icon {
-  font-size: 52px;
-  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 76px;
+  height: 76px;
+  border-radius: var(--radius-full);
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--color-success);
   animation: popIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -1106,7 +1194,9 @@
 }
 
 .agent-fab-icon {
-  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   animation: sparkle 2.5s ease-in-out infinite;
 }
 
@@ -1168,7 +1258,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
   flex-shrink: 0;
 }
 
@@ -1417,7 +1506,11 @@
 }
 
 .tool-step-icon {
+  display: flex;
+  align-items: center;
   flex-shrink: 0;
+  color: var(--color-primary);
+  padding-top: 1px;
 }
 
 .tool-step-body {
@@ -1511,7 +1604,7 @@
   }
 
   .agent-fab-text {
-    display: none;               /* 手机上只留 ✨ 图标 */
+    display: none;               /* 手机上只留图标（隐藏文字） */
   }
 
   /* 手机上面板接近全屏 */

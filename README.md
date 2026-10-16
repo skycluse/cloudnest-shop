@@ -40,6 +40,36 @@
   - `pages/*.css` — 各页面专属样式
 - **状态管理**：手写观察者模式（`cart.subscribe()`），购物车数据同步到 `localStorage`
 - **API 层**：统一封装 `fetch`，集中处理错误和响应格式
+- **图标系统**：内联 SVG（Lucide），详见下方「图标方案」
+- **商品图**：真实商品照片（Unsplash 免费图库，可商用）
+
+### 图标方案
+
+**没有使用 emoji，也没有使用图标字体，而是内联 SVG。**
+
+| 方案 | 问题 |
+|---|---|
+| ❌ emoji（🎧 ⌨️ 🛒） | 每个系统长得不一样；颜色固定不能跟着主题变；和文字对不齐；观感不专业 |
+| ❌ 图标字体 CDN | 需要联网才能显示，离线就变成空白方块 |
+| ✅ **内联 SVG**（本项目采用） | 不依赖网络、颜色自动跟随、矢量不糊、可精确控制 |
+
+实现方式：`web/js/icons.js` 集中管理所有图标路径，HTML 里写占位符，
+页面加载时统一渲染：
+
+```html
+<!-- HTML 里只写图标名，清爽好维护 -->
+<span data-icon="shoppingCart" data-icon-size="20"></span>
+```
+
+```js
+// 需要动态生成时，直接调用
+window.icons.icon('sparkles', 18)
+```
+
+关键点是 SVG 上的 `stroke="currentColor"` —— 描边颜色等于父元素文字颜色，
+所以**鼠标悬浮变紫、选中变蓝、暗色模式变白，全部自动生效**，不用写额外样式。
+
+图标来源：[Lucide](https://lucide.dev)（ISC 协议，可免费商用）。
 
 ### 后端
 - **Node.js + Express 4**
@@ -124,6 +154,7 @@ cloudnest-shop/
 │   │       └── orders.css
 │   │
 │   ├── js/
+│   │   ├── icons.js            # 内联 SVG 图标库（Lucide）
 │   │   ├── api.js              # 接口封装
 │   │   ├── utils.js            # 工具函数（格式化、防抖、防 XSS 等）
 │   │   ├── cart.js             # 购物车状态管理

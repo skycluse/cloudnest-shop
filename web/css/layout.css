@@ -82,6 +82,20 @@
   grid-column: 1 / -1;
 }
 
+/* 空状态里的大图标（搜索无结果、加载失败等）
+   用圆形浅色底衬托，比裸图标更耐看，也更有"空"的感觉 */
+.empty-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  margin-bottom: var(--space-3);
+  border-radius: var(--radius-full);
+  background: var(--color-bg-mute);
+  color: var(--color-text-light);
+}
+
 /* ---------- 商品网格 ----------
    auto-fill + minmax 是响应式的"魔法"：
    每列最少 240px，能塞几列就塞几列，自动换行 —— 不用写一次媒体查询

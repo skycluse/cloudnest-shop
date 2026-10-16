@@ -81,20 +81,66 @@
   50%      { border-radius: 58% 42% 37% 63% / 56% 59% 41% 44%; transform: rotate(12deg); }
 }
 
-.hero-emoji {
+/* ---------- Hero 右侧浮动商品照片 ----------
+   原来是 emoji（🎧⌨️🖱️），换成真实商品照片。
+
+   做法：圆形白底 + 商品照片 + 阴影，
+   像三张"悬浮的商品卡片"，比 emoji 更有产品感。
+*/
+.hero-float {
   position: absolute;
-  font-size: 46px;
-  filter: drop-shadow(0 8px 16px rgba(79, 70, 229, 0.25));
+  width: 108px;
+  height: 108px;
+  border-radius: var(--radius-lg);
+  background: #fff;
+  padding: 10px;
+  box-shadow: 0 12px 28px rgba(79, 70, 229, 0.22),
+              0 2px 6px rgba(16, 24, 40, 0.06);
   animation: floatY 4s ease-in-out infinite;
+  overflow: hidden;
 }
 
-.hero-emoji-1 { top: 12%;  left: 16%;  animation-delay: 0s; }
-.hero-emoji-2 { top: 46%;  right: 14%; animation-delay: 0.8s; font-size: 40px; }
-.hero-emoji-3 { bottom: 12%; left: 30%; animation-delay: 1.6s; font-size: 36px; }
+.hero-float img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+}
+
+/* 三张照片错落摆放，大小和角度略有差异，显得自然。
+   注意：倾斜角度用 CSS 变量 --tilt 传进去，
+   因为动画 floatY 会重写 transform，不能直接写 transform: rotate()，
+   否则动画一跑，倾斜就没了。 */
+.hero-float-1 {
+  top: 8%;
+  left: 12%;
+  width: 116px;
+  height: 116px;
+  --tilt: -6deg;
+  animation-delay: 0s;
+}
+
+.hero-float-2 {
+  top: 42%;
+  right: 10%;
+  width: 104px;
+  height: 104px;
+  --tilt: 5deg;
+  animation-delay: 0.8s;
+}
+
+.hero-float-3 {
+  bottom: 8%;
+  left: 26%;
+  width: 96px;
+  height: 96px;
+  --tilt: -3deg;
+  animation-delay: 1.6s;
+}
 
 @keyframes floatY {
-  0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(-14px); }
+  0%, 100% { transform: translateY(0) rotate(var(--tilt, 0deg)); }
+  50%      { transform: translateY(-14px) rotate(var(--tilt, 0deg)); }
 }
 
 /* ---------- 商品数量提示 ---------- */
