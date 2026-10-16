@@ -1,4 +1,4 @@
-﻿/* ============================================================
+/* ============================================================
    agent.js —— AI 购物助手（前端）
    ------------------------------------------------------------
    【这个文件的定位，你要先搞清楚】
@@ -1072,7 +1072,7 @@ function buildNoResultText(need) {
  * @param {string} role 'user' | 'assistant'
  * @param {string} text 文字内容
  * @param {Array} products 可选，附带展示的商品卡片
- * @param {Array} steps 可选，工具调用过程
+ * @param {Array} steps 可选，工具调用过程（当前不在界面上展示，仅保留数据）
  */
 function appendMessage(role, text, products, steps) {
   var body = utils.$('#agentBody');
@@ -1085,27 +1085,18 @@ function appendMessage(role, text, products, steps) {
     ? '<div class="msg-avatar">' + window.icons.icon('sparkles', 15) + '</div>'
     : '';
 
-  // 工具调用过程：可折叠面板（考核 9.5 第 4 条要求展示思考过程）
-  var stepsHtml = '';
-  if (steps && steps.length > 0) {
-    var inner = '';
-    for (var i = 0; i < steps.length; i++) {
-      inner +=
-        '<div class="tool-step">' +
-          '<span class="tool-step-icon">' + window.icons.icon('wrench', 12) + '</span>' +
-          '<span class="tool-step-body">' +
-            '<span class="tool-step-name">' + utils.escapeHtml(steps[i].name) + '</span>' +
-            '(' + utils.escapeHtml(steps[i].args) + ')<br />' +
-            '→ ' + utils.escapeHtml(steps[i].result) +
-          '</span>' +
-        '</div>';
-    }
-    stepsHtml =
-      '<details class="tool-steps">' +
-        '<summary>执行了 ' + steps.length + ' 个步骤</summary>' +
-        inner +
-      '</details>';
-  }
+  /* 关于工具调用过程（steps）：
+     ------------------------------------------------------------
+     之前这里会渲染一个「执行了 N 个步骤」的可折叠面板，
+     现在按需求去掉了 —— 界面上只保留对话内容和商品卡片，更干净。
+
+     但 steps 数据仍然在产生和传递（见 runIntent 里的 steps.push），
+     只是不再显示。这样做的好处：
+     1. 想恢复这个功能，只要把下面的渲染代码加回来
+     2. 调试时可以在 Console 里看 window.agent.state 追踪工具调用
+     3. 以后接真模型做「可观测性」（考核 9.8 的 Trace 要求）时，
+        这批数据是现成的
+  */
 
   // 商品卡片
   var productsHtml = '';
@@ -1130,7 +1121,6 @@ function appendMessage(role, text, products, steps) {
     avatarHtml +
     '<div>' +
       '<div class="msg-bubble">' + utils.escapeHtml(text) + '</div>' +
-      stepsHtml +
       productsHtml +
     '</div>';
 

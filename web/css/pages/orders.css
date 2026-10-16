@@ -161,16 +161,48 @@
 }
 
 .order-customer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
   font-size: var(--fs-xs);
   color: var(--color-text-sub);
-  line-height: 1.7;
   min-width: 0;
   flex: 1 1 240px;
 }
 
-.order-customer .name {
+/* 收货信息的每一行：标签 + 值
+   ------------------------------------------------------------
+   用 grid 让三个标签左对齐、三列宽度一致，
+   这样"收货人 / 联系电话 / 收货地址"是整齐的一竖排，
+   比之前的「收货人：张三 · 138…」挤一行清楚得多。
+*/
+.customer-row {
+  display: grid;
+  grid-template-columns: 62px 1fr;
+  gap: var(--space-3);
+  align-items: baseline;
+  min-width: 0;
+}
+
+.customer-label {
+  color: var(--color-text-light);
+  flex-shrink: 0;
+}
+
+.customer-value {
   color: var(--color-text);
+  min-width: 0;
+  word-break: break-all;
+}
+
+/* 姓名加粗，电话用等宽数字（数字宽度一致，看起来更整齐） */
+.customer-value.name {
   font-weight: 600;
+}
+
+.customer-value.phone {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.3px;
 }
 
 .order-total {
@@ -342,6 +374,12 @@
     width: 100%;
     padding-top: var(--space-3);
     border-top: 1px dashed var(--color-border-strong);
+  }
+
+  /* 手机上标签列窄一点，把空间留给地址内容 */
+  .customer-row {
+    grid-template-columns: 54px 1fr;
+    gap: var(--space-2);
   }
 
   .order-detail-wrap {

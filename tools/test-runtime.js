@@ -280,12 +280,13 @@ async function main() {
       fail('AI 回答不对', lastText.slice(0, 150));
     }
 
-    // 工具调用过程面板
+    // 工具调用过程面板：按需求已从界面移除，
+    // 这里断言它【不再出现】，防止以后不小心又渲染回来
     const toolSteps = home.document.querySelectorAll('.tool-steps');
-    if (toolSteps.length > 0) {
-      ok('展示了工具调用过程面板');
+    if (toolSteps.length === 0) {
+      ok('工具调用过程面板已移除（界面上不再显示）');
     } else {
-      fail('没有展示工具调用过程');
+      fail(`界面上不应该再有"执行N个步骤"面板，实际找到 ${toolSteps.length} 个`);
     }
 
     // 商品卡片
@@ -469,6 +470,40 @@ async function main() {
     for (const f of orderFields) {
       if (firstOrderHtml.includes(f.key)) ok('订单包含 ' + f.desc);
       else fail('订单缺少 ' + f.desc);
+    }
+
+    // 收货人 / 联系电话 / 收货地址 必须是分开的三行，不能挤在一行。
+    // 用「联系方式被单独成一个 customer-row」来判断，
+    // 而不是只检查文字存在 —— 否则改回老写法测试也照样通过。
+    const customerRows = orderCards[0].querySelectorAll('.customer-row');
+    if (customerRows.length === 3) {
+      ok('收货信息拆成 3 行（收货人 / 联系电话 / 收货地址）');
+
+      const labels = Array.from(customerRows)
+        .map((r) => (r.querySelector('.customer-label') || {}).textContent || '')
+        .join('|');
+
+      if (labels.includes('收货人') && labels.includes('联系电话') && labels.includes('收货地址')) {
+        ok('三行标签分别是：' + labels.replace(/\|/g, '、'));
+      } else {
+        fail('标签文字不对', labels);
+      }
+
+      // 关键：电话必须是独立一格，不能和姓名在同一个值里
+      const nameValue = (customerRows[0].querySelector('.customer-value') || {}).textContent || '';
+      const phoneValue = (customerRows[1].querySelector('.customer-value') || {}).textContent || '';
+
+      const phoneLooksSeparate = /^\d[\d\s-]*$/.test(phoneValue.trim());
+      const nameHasNoPhone = !/\d{5,}/.test(nameValue);
+
+      if (phoneLooksSeparate && nameHasNoPhone) {
+        ok(`姓名「${nameValue.trim()}」与电话「${phoneValue.trim()}」已分开`);
+      } else {
+        fail('姓名和电话似乎还在一起',
+             `姓名="${nameValue.trim()}" 电话="${phoneValue.trim()}"`);
+      }
+    } else {
+      fail(`收货信息应为 3 行，实际 ${customerRows.length} 行`);
     }
   } else if (orderEmpty) {
     ok('无订单时显示友好的空状态');
