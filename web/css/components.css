@@ -1472,7 +1472,14 @@
   cursor: not-allowed;
 }
 
-/* ---- 工具调用过程面板（9.5 要求：展示"思考→调用工具→结果"）---- */
+/* ---- 工具调用过程面板 ----
+   已按需求从界面上移除（见 agent.js 的 appendMessage）。
+
+   这段样式先保留着，因为：
+   1. 想恢复功能时不用重写 CSS
+   2. 以后做「可观测性面板」（考核 9.8 的 Trace 展示）可以直接用
+   目前页面上没有任何元素带 .tool-steps 类，所以这些规则不会生效。
+*/
 .tool-steps {
   margin-top: var(--space-2);
   border: 1px solid var(--color-border);

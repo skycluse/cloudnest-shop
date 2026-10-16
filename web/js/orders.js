@@ -75,9 +75,22 @@ function orderCardHtml(order) {
 
       '<footer class="order-card-foot">' +
         '<div class="order-customer">' +
-          '收货人：<span class="name">' + utils.escapeHtml(order.customer.name) + '</span>' +
-          ' · ' + utils.escapeHtml(order.customer.phone) + '<br />' +
-          '地址：' + utils.escapeHtml(order.customer.address) +
+          /* 收货信息拆成三行独立显示。
+             之前是「收货人：张三 · 13800138000」挤在一行，
+             名字长一点就会和电话黏在一起，不好读也不好复制。
+             拆开之后每项一行，标签左对齐，扫一眼就能找到要的信息。 */
+          '<div class="customer-row">' +
+            '<span class="customer-label">收货人</span>' +
+            '<span class="customer-value name">' + utils.escapeHtml(order.customer.name) + '</span>' +
+          '</div>' +
+          '<div class="customer-row">' +
+            '<span class="customer-label">联系电话</span>' +
+            '<span class="customer-value phone">' + utils.escapeHtml(order.customer.phone) + '</span>' +
+          '</div>' +
+          '<div class="customer-row">' +
+            '<span class="customer-label">收货地址</span>' +
+            '<span class="customer-value">' + utils.escapeHtml(order.customer.address) + '</span>' +
+          '</div>' +
         '</div>' +
         '<div class="order-total">' +
           '<span>共 ' + order.itemCount + ' 件，合计</span>' +
@@ -189,8 +202,11 @@ function renderSingleOrder(order) {
         '</div>' +
         '<div class="order-detail-row">' +
           '<span class="order-detail-label">收货人</span>' +
-          '<span class="order-detail-value">' + utils.escapeHtml(order.customer.name) +
-            ' · ' + utils.escapeHtml(order.customer.phone) + '</span>' +
+          '<span class="order-detail-value">' + utils.escapeHtml(order.customer.name) + '</span>' +
+        '</div>' +
+        '<div class="order-detail-row">' +
+          '<span class="order-detail-label">联系电话</span>' +
+          '<span class="order-detail-value">' + utils.escapeHtml(order.customer.phone) + '</span>' +
         '</div>' +
         '<div class="order-detail-row">' +
           '<span class="order-detail-label">收货地址</span>' +
