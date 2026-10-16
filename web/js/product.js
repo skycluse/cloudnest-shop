@@ -62,7 +62,8 @@ function renderProductDetail(product) {
       '<button class="btn btn-ghost" disabled>暂时无法购买</button>';
   } else {
     buyButtonsHtml =
-      '<button class="btn btn-outline" id="detailAddCart" type="button">🛒 加入购物车</button>' +
+      '<button class="btn btn-outline" id="detailAddCart" type="button">' +
+        window.icons.icon('shoppingCart', 17) + ' 加入购物车</button>' +
       '<button class="btn btn-primary" id="detailBuyNow" type="button">立即购买</button>';
   }
 
@@ -107,7 +108,7 @@ function renderProductDetail(product) {
           '<span class="detail-price"><span class="unit">¥</span>' +
             utils.formatPrice(product.price) + '</span>' +
           '<span class="detail-rating">' +
-            '<span class="stars">' + utils.renderStars(product.rating) + '</span> ' +
+            utils.renderStars(product.rating) + ' ' +
             product.rating + ' 分' +
           '</span>' +
         '</div>' +
@@ -137,9 +138,9 @@ function renderProductDetail(product) {
         '<div class="detail-buy-actions">' + buyButtonsHtml + '</div>' +
 
         '<div class="detail-services">' +
-          '<span class="detail-service">✅ 正品保障</span>' +
-          '<span class="detail-service">🚚 48 小时内发货</span>' +
-          '<span class="detail-service">↩️ 7 天无理由退换</span>' +
+          '<span class="detail-service">' + window.icons.icon('shieldCheck', 15) + ' 正品保障</span>' +
+          '<span class="detail-service">' + window.icons.icon('truck', 15) + ' 48 小时内发货</span>' +
+          '<span class="detail-service">' + window.icons.icon('rotateCcw', 15) + ' 7 天无理由退换</span>' +
         '</div>' +
       '</div>' +
     '</div>' +
@@ -227,7 +228,7 @@ function bindDetailEvents(product) {
         var result = cart.add(fresh, detailQuantity);
 
         if (result.ok) {
-          utils.toast('已加入购物车 ' + detailQuantity + ' 件 ✓', 'success');
+          utils.toast('已加入购物车 ' + detailQuantity + ' 件', 'success');
           components.openCartDrawer();
         } else {
           utils.toast(result.message, 'error');
@@ -336,7 +337,7 @@ function renderDetailError(message) {
 
   container.innerHTML =
     '<div class="detail-error">' +
-      '<div class="detail-error-icon">😵</div>' +
+      '<div class="detail-error-icon">' + window.icons.icon('alertCircle', 48) + '</div>' +
       '<h2>商品加载失败</h2>' +
       '<p>' + utils.escapeHtml(message) + '</p>' +
       '<a class="btn btn-primary" href="./index.html#products">返回商品列表</a>' +

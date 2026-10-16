@@ -20,13 +20,13 @@
 
       <!-- Logo -->
       <a class="logo" href="./index.html">
-        <span class="logo-mark">🪺</span>
+        <span class="logo-mark" data-icon="package" data-icon-size="24"></span>
         <span class="logo-text">云巢商城</span>
       </a>
 
       <!-- 搜索框 -->
       <form class="search-box" id="searchForm" role="search">
-        <span class="search-icon">🔍</span>
+        <span class="search-icon" data-icon="search" data-icon-size="16"></span>
         <input
           type="search"
           id="searchInput"
@@ -40,18 +40,18 @@
       <!-- 右侧图标区 -->
       <nav class="header-actions">
         <a class="icon-btn" href="./index.html#products" title="全部商品">
-          <span class="icon">📦</span>
+          <span class="icon" data-icon="package" data-icon-size="19"></span>
           <span class="icon-label">商品</span>
         </a>
 
         <a class="icon-btn" href="./orders.html" title="我的订单">
-          <span class="icon">📋</span>
+          <span class="icon" data-icon="receipt" data-icon-size="19"></span>
           <span class="icon-label">订单</span>
         </a>
 
         <!-- 购物车按钮：点击弹出侧拉购物车 -->
         <button class="icon-btn cart-trigger" id="cartTrigger" type="button" title="购物车">
-          <span class="icon">🛒</span>
+          <span class="icon" data-icon="shoppingCart" data-icon-size="19"></span>
           <span class="icon-label">购物车</span>
           <!-- 角标：购物车里有几件商品 -->
           <span class="cart-badge" id="cartBadge" hidden>0</span>
@@ -75,15 +75,16 @@
           <div class="hero-actions">
             <a class="btn btn-primary btn-lg" href="#products">开始逛逛</a>
             <button class="btn btn-ghost btn-lg" id="heroAgentBtn" type="button">
-              ✨ 让 AI 帮我挑
+              <span data-icon="sparkles" data-icon-size="18"></span>
+              让 AI 帮我挑
             </button>
           </div>
         </div>
         <div class="hero-art" aria-hidden="true">
           <div class="hero-blob"></div>
-          <div class="hero-emoji hero-emoji-1">🎧</div>
-          <div class="hero-emoji hero-emoji-2">⌨️</div>
-          <div class="hero-emoji hero-emoji-3">🖱️</div>
+          <div class="hero-float hero-float-1"><img src="./assets/products/earphone-2.jpg" alt="" loading="lazy" /></div>
+          <div class="hero-float hero-float-2"><img src="./assets/products/keyboard-4.jpg" alt="" loading="lazy" /></div>
+          <div class="hero-float hero-float-3"><img src="./assets/products/mouse-2.jpg" alt="" loading="lazy" /></div>
         </div>
       </div>
     </section>
@@ -163,7 +164,7 @@
   <footer class="site-footer">
     <div class="container footer-inner">
       <div class="footer-brand">
-        <span class="logo-mark">🪺</span>
+        <span class="logo-mark" data-icon="package" data-icon-size="24"></span>
         <span class="logo-text">云巢商城 CloudNest</span>
         <p class="footer-desc">桌面数码好物精选 · 项目演示站点，非真实商业网站</p>
       </div>
@@ -187,7 +188,7 @@
   <aside class="cart-drawer" id="cartDrawer" aria-hidden="true">
     <header class="drawer-head">
       <h3 class="drawer-title">购物车 <span class="drawer-count" id="cartDrawerCount">(0)</span></h3>
-      <button class="drawer-close" id="cartClose" type="button" aria-label="关闭">✕</button>
+      <button class="drawer-close" id="cartClose" type="button" aria-label="关闭" data-icon="x" data-icon-size="17"></button>
     </header>
 
     <!-- 购物车商品列表：JS 渲染 -->
@@ -212,7 +213,7 @@
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="checkoutTitle">
       <header class="modal-head">
         <h3 class="modal-title" id="checkoutTitle">填写收货信息</h3>
-        <button class="drawer-close" id="checkoutClose" type="button" aria-label="关闭">✕</button>
+        <button class="drawer-close" id="checkoutClose" type="button" aria-label="关闭" data-icon="x" data-icon-size="17"></button>
       </header>
 
       <form class="modal-body" id="checkoutForm" novalidate>
@@ -254,7 +255,7 @@
   <!-- ==================== 下单结果弹窗 ==================== -->
   <div class="modal-mask" id="resultMask" hidden>
     <div class="modal modal-result" role="dialog" aria-modal="true">
-      <div class="result-icon">✅</div>
+      <div class="result-icon" data-icon="checkCircle" data-icon-size="52"></div>
       <h3 class="result-title">下单成功！</h3>
       <p class="result-desc">订单已提交（模拟支付），可在「我的订单」中查看</p>
       <div class="result-info" id="resultInfo"></div>
@@ -267,20 +268,20 @@
 
   <!-- ==================== AI 购物助手（浮窗） ==================== -->
   <button class="agent-fab" id="agentFab" type="button" title="AI 购物助手">
-    <span class="agent-fab-icon">✨</span>
+    <span class="agent-fab-icon" data-icon="sparkles" data-icon-size="19"></span>
     <span class="agent-fab-text">AI 助手</span>
   </button>
 
   <section class="agent-panel" id="agentPanel" aria-hidden="true">
     <header class="agent-head">
       <div class="agent-head-left">
-        <span class="agent-avatar">✨</span>
+        <span class="agent-avatar" data-icon="sparkles" data-icon-size="18"></span>
         <div>
           <h3 class="agent-title">云巢 AI 购物助手</h3>
           <p class="agent-status" id="agentStatus">在线 · 基于商城真实商品推荐</p>
         </div>
       </div>
-      <button class="drawer-close" id="agentClose" type="button" aria-label="关闭">✕</button>
+      <button class="drawer-close" id="agentClose" type="button" aria-label="关闭" data-icon="x" data-icon-size="17"></button>
     </header>
 
     <div class="agent-body" id="agentBody">
@@ -298,7 +299,7 @@
         placeholder="例如：500 元以内的运动耳机有吗？"
         autocomplete="off"
       />
-      <button class="agent-send" type="submit" id="agentSend" aria-label="发送">➤</button>
+      <button class="agent-send" type="submit" id="agentSend" aria-label="发送" data-icon="send" data-icon-size="17"></button>
     </form>
   </section>
 
@@ -307,6 +308,7 @@
 
   <!-- ==================== 脚本 ==================== -->
   <!-- 注意加载顺序：先 api/utils，再 cart，最后页面脚本 -->
+  <script src="./js/icons.js"></script>
   <script src="./js/api.js"></script>
   <script src="./js/utils.js"></script>
   <script src="./js/cart.js"></script>

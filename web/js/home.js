@@ -111,7 +111,7 @@ async function loadProducts() {
     if (grid) {
       grid.innerHTML =
         '<div class="empty-text">' +
-          '<div style="font-size:40px;margin-bottom:8px;">😵</div>' +
+          '<div class="empty-icon">' + window.icons.icon('alertCircle', 40) + '</div>' +
           utils.escapeHtml(err.message) +
           '<br /><button class="btn btn-outline btn-sm" style="margin-top:12px" ' +
           'onclick="location.reload()">重新加载</button>' +
@@ -196,7 +196,9 @@ function renderActiveFilters() {
     html +=
       '<span class="filter-chip">' +
         utils.escapeHtml(chips[i].label) +
-        '<button type="button" data-clear-filter="' + chips[i].key + '" aria-label="移除">✕</button>' +
+        '<button type="button" data-clear-filter="' + chips[i].key + '" aria-label="移除">' +
+          window.icons.icon('x', 13) +
+        '</button>' +
       '</span>';
   }
   el.innerHTML = html;

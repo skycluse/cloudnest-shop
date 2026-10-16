@@ -139,16 +139,33 @@ function throttle(fn, interval) {
 }
 
 /**
- * 生成星星评分显示：4.6 -> "★★★★☆ 4.6"
+ * 生成星级评分的 HTML：4.6 -> 5 颗星（4 颗实心 + 1 颗空心）
+ *
+ * 为什么改用 SVG 星星而不是 ★☆ 文字符号？
+ * ★☆ 虽然不算 emoji，但也有和 emoji 一样的问题：
+ * 不同系统、不同字体的星星粗细和间距都不一样，对不齐。
+ * 用 SVG 能精确控制大小、间距和颜色。
+ *
+ * 返回的是 HTML 字符串，调用处要用 innerHTML 插入（不是 textContent）。
  */
 function renderStars(rating) {
   var score = Number(rating) || 0;
   var full = Math.floor(score);
-  var stars = '';
+  var html = '';
+
   for (var i = 0; i < 5; i++) {
-    stars += i < full ? '★' : '☆';
+    var filled = i < full;
+    html +=
+      '<svg class="star' + (filled ? ' is-filled' : '') + '" width="13" height="13" ' +
+      'viewBox="0 0 24 24" ' +
+      'fill="' + (filled ? 'currentColor' : 'none') + '" ' +
+      'stroke="currentColor" stroke-width="2" stroke-linecap="round" ' +
+      'stroke-linejoin="round" aria-hidden="true">' +
+      '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>' +
+      '</svg>';
   }
-  return stars;
+
+  return '<span class="stars">' + html + '</span>';
 }
 
 /**

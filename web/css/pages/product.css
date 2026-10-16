@@ -133,14 +133,11 @@
 }
 
 .detail-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
   font-size: var(--fs-sm);
   color: var(--color-text-sub);
-}
-
-.detail-rating .stars {
-  color: var(--color-accent);
-  font-size: var(--fs-md);
-  letter-spacing: 1px;
 }
 
 /* 元信息列表 */
@@ -233,6 +230,11 @@
   gap: var(--space-1);
 }
 
+/* 服务承诺的小图标：用绿色表示"正向保障" */
+.detail-service .icon-svg {
+  color: var(--color-success);
+}
+
 /* ---------- 详情介绍区 ---------- */
 .detail-tabs {
   margin-top: var(--space-10);
@@ -317,7 +319,14 @@
 }
 
 .detail-error-icon {
-  font-size: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 96px;
+  height: 96px;
+  border-radius: var(--radius-full);
+  background: var(--color-bg-mute);
+  color: var(--color-danger);
 }
 
 /* ============================================================
