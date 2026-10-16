@@ -1018,8 +1018,21 @@ function buildRecommendText(need, result, totalMatched) {
   var showCount = Math.min(3, result.items.length);
   for (var i = 0; i < showCount; i++) {
     var p = result.items[i];
+
+    /* 【重要】这里只能拼纯文本，不能放 HTML！
+     *
+     * 踩过的坑：
+     * 我一度在这里调用 utils.renderStars(p.rating)，
+     * 它现在返回的是 SVG 星级图（HTML 代码）。
+     * 但聊天气泡的内容会经过 utils.escapeHtml() 转义（防 XSS），
+     * 结果那一大坨 <svg><polygon .../></svg> 被当成普通文字显示出来，
+     * 看上去就像满屏乱码。
+     *
+     * 所以聊天文案里只用纯文本：评分直接写数字，不用星级图。
+     * 需要图形化星级的地方（商品卡片、详情页）走的是 innerHTML，不受影响。
+     */
     lines.push((i + 1) + '. ' + p.name + ' — ¥' + utils.formatPrice(p.price) +
-               '  ' + utils.renderStars(p.rating) + ' ' + p.rating);
+               '（评分 ' + p.rating + '）');
     lines.push('   ' + p.tagline);
   }
 

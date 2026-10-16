@@ -297,6 +297,40 @@ async function main() {
       fail('AI 回复里没有商品卡片');
     }
 
+    /* ---- 回归测试：聊天气泡里不能出现裸露的 HTML 代码 ----
+     *
+     * 为什么专门测这个？
+     * 聊天气泡的内容走 escapeHtml() 转义（防 XSS），
+     * 所以如果把 HTML（比如星级 SVG）拼进文案里，
+     * 它会被当成普通文字显示出来，看上去就是满屏乱码。
+     *
+     * 这个 bug 真实发生过：renderStars() 从文字改成 SVG 之后，
+     * agent.js 里没同步改，结果回复里出现一大坨
+     * <span class="stars"><svg ...><polygon .../></svg></span>
+     */
+    const allReplyText = Array.from(
+      home.document.querySelectorAll('.msg-assistant .msg-bubble')
+    ).map((el) => el.textContent).join('\n');
+
+    // 找出可能的裸露标签（<xxx 或 </xxx）
+    const leakedTags = allReplyText.match(/<\/?[a-zA-Z][a-zA-Z0-9]*[\s>/]/g) || [];
+
+    if (leakedTags.length === 0) {
+      ok('AI 回复里没有裸露的 HTML 代码');
+    } else {
+      const uniq = Array.from(new Set(leakedTags)).slice(0, 6);
+      fail('AI 回复里混进了 HTML 代码（会被显示成乱码）',
+           '发现的标签：' + uniq.join(' ') +
+           '\n回复片段：' + allReplyText.slice(0, 200));
+    }
+
+    // 顺便确认没有编码损坏的替换字符
+    if (allReplyText.includes('\uFFFD')) {
+      fail('AI 回复里含替换字符 U+FFFD（编码损坏）');
+    } else {
+      ok('AI 回复文字编码正常');
+    }
+
     // 测试 2：超范围请求
     await agent.send('帮我写个 python 函数');
     await new Promise((r) => setTimeout(r, 800));
