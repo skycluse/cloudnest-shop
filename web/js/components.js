@@ -556,6 +556,18 @@ function initGlobalComponents() {
     console.warn('icons.js 没有加载，页面图标将无法显示');
   }
 
+  /* ---------- 图片加载失败兜底 ----------
+     订单里存的是"下单当时的商品快照"，如果那个图片文件后来被删了
+     或改了名字，历史订单就会显示破图。
+     这里挂一个全局兜底，任何图片加载失败都换成占位图。
+
+     （根因已在 tools/fix_order_images.py 里修过数据，
+       这里是为了防止以后再出现类似情况。）
+  */
+  if (window.utils && typeof window.utils.initImageFallback === 'function') {
+    window.utils.initImageFallback();
+  }
+
   /* ---------- 购物车抽屉 ---------- */
   var cartTrigger = utils.$('#cartTrigger');
   if (cartTrigger) cartTrigger.addEventListener('click', openCartDrawer);

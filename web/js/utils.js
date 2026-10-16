@@ -236,6 +236,80 @@ function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }
 
+/* ============================================================
+   图片加载失败兜底
+   ------------------------------------------------------------
+   【为什么需要这个？】
+
+   订单里存的是"下单当时的商品快照"（包括图片路径）。
+   这是对的设计 —— 商品以后改价下架，历史订单还能显示当时的样子。
+
+   但副作用是：如果图片文件被换了名字或删了（比如我们把商品图
+   从 .svg 全部换成 .jpg），**已经存在的历史订单就会图片 404**，
+   页面上出现一个破图图标，很难看。
+
+   解决方案有两层：
+   1. 数据层：写脚本修好历史订单里的路径（tools/fix_order_images.py）
+   2. 展示层：万一还是加载失败，用一个占位图标兜住，不让破图露出来
+
+   第 2 层是防御性编程 —— 数据总会因为各种原因出问题，
+   界面不能因此就崩掉或难看。
+   ============================================================ */
+
+/**
+ * 图片加载失败时，把 src 换成一张内嵌的占位图。
+ *
+ * @param {Element} imgEl 出错的 img 元素
+ */
+function applyImageFallback(imgEl) {
+  if (!imgEl || imgEl.getAttribute('data-fallback-done') === '1') return;
+
+  // 打标记，避免占位图万一也失败时无限循环
+  imgEl.setAttribute('data-fallback-done', '1');
+
+  // 用内联 SVG（data URI）做占位：
+  // 它写在代码里，永远不会 404，作为兜底最可靠。
+  imgEl.src =
+    'data:image/svg+xml;charset=utf-8,' +
+    encodeURIComponent(
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">' +
+        '<rect width="64" height="64" fill="#f3f4f6"/>' +
+        '<g fill="none" stroke="#d1d5db" stroke-width="2.5" ' +
+           'stroke-linecap="round" stroke-linejoin="round">' +
+          '<rect x="14" y="18" width="36" height="28" rx="3"/>' +
+          '<circle cx="24" cy="28" r="3"/>' +
+          '<path d="M50 40 38 30 22 46"/>' +
+        '</g>' +
+      '</svg>'
+    );
+
+  imgEl.classList.add('img-fallback');
+}
+
+/**
+ * 全局兜底：任何图片加载失败都换成占位图。
+ *
+ * 【关键点：必须用捕获阶段（第三个参数 true）】
+ * 因为 error 事件**不会冒泡**，
+ * 在 document 上用普通的冒泡监听是抓不到的，
+ * 只有捕获阶段才能拦到所有图片的加载失败。
+ *
+ * 这样不管图片是 HTML 里写死的、还是 JS 动态插入的，全都能兜住，
+ * 不用给每个 <img> 单独绑事件。
+ */
+function initImageFallback() {
+  document.addEventListener(
+    'error',
+    function (event) {
+      var target = event.target;
+      if (target && target.tagName === 'IMG') {
+        applyImageFallback(target);
+      }
+    },
+    true   // ← 捕获阶段
+  );
+}
+
 // 挂到 window，供其它文件使用
 window.utils = {
   $: $,
@@ -252,5 +326,7 @@ window.utils = {
   toast: toast,
   getUrlParam: getUrlParam,
   scrollToElement: scrollToElement,
-  clamp: clamp
+  clamp: clamp,
+  applyImageFallback: applyImageFallback,
+  initImageFallback: initImageFallback
 };
