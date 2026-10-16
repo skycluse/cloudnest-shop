@@ -266,11 +266,20 @@
   overflow: hidden;
 }
 
+/* 商品照片的显示方式
+   ------------------------------------------------------------
+   从"图标"换成"真实照片"后，这里必须改：
+   - object-fit: contain → 照片被完整塞进框里，四周留白，显得很小很空
+   - object-fit: cover   → 照片铺满整个框，多余部分裁掉，像电商网站那样
+
+   因为真实照片的比例五花八门（有横的有竖的），
+   用 cover 能保证每张卡片都是整齐的 4:3，视觉上更统一。
+   padding 也要去掉 —— 照片要铺满，不能留白边。
+*/
 .product-thumb img {
   width: 100%;
   height: 100%;
-  object-fit: contain;
-  padding: var(--space-5);
+  object-fit: cover;
   transition: transform var(--transition-slow);
 }
 
@@ -681,13 +690,13 @@
   padding-bottom: 0;
 }
 
+/* 购物车小图：照片用 cover 填满圆角方块，看起来更像商品缩略图 */
 .cart-item-img {
   width: 72px;
   height: 72px;
   border-radius: var(--radius-sm);
   background: var(--color-bg-mute);
-  object-fit: contain;
-  padding: var(--space-2);
+  object-fit: cover;
 }
 
 .cart-item-main {
@@ -1447,13 +1456,13 @@
   box-shadow: var(--shadow-sm);
 }
 
+/* AI 助手消息里的商品小图：同样用 cover */
 .msg-product img {
   width: 52px;
   height: 52px;
-  object-fit: contain;
+  object-fit: cover;
   background: var(--color-bg-mute);
   border-radius: var(--radius-xs);
-  padding: var(--space-1);
 }
 
 .msg-product-info {

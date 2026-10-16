@@ -258,11 +258,22 @@ async function main() {
     fail('CSS Content-Type 不对：' + cssRes.headers.get('content-type'));
   }
 
-  const svgRes = await fetch(SERVER + '/assets/products/earphone-1.svg');
-  if ((svgRes.headers.get('content-type') || '').includes('svg')) {
-    ok('SVG 返回正确的 Content-Type');
+  // 商品图从 SVG 换成了真实照片 JPG，这里同步改掉
+  const imgRes = await fetch(SERVER + '/assets/products/earphone-1.jpg');
+  const imgType = imgRes.headers.get('content-type') || '';
+  if (imgType.includes('jpeg') || imgType.includes('jpg')) {
+    ok('商品图片返回正确的 Content-Type（image/jpeg）');
   } else {
-    fail('SVG Content-Type 不对：' + svgRes.headers.get('content-type'));
+    fail('商品图片 Content-Type 不对：' + imgType);
+  }
+
+  // 顺便确认图片体积合理（太小说明是错误页面，太大说明没压缩）
+  const imgBuf = await imgRes.arrayBuffer();
+  const kb = Math.round(imgBuf.byteLength / 1024);
+  if (kb > 5 && kb < 400) {
+    ok(`商品图片体积合理（${kb} KB）`);
+  } else {
+    fail(`商品图片体积异常：${kb} KB`);
   }
 
   /* ---------- 汇总 ---------- */

@@ -98,13 +98,13 @@
   align-items: center;
 }
 
+/* 订单里的商品缩略图：照片用 cover 填满 */
 .order-item-img {
   width: 64px;
   height: 64px;
   border-radius: var(--radius-sm);
   background: var(--color-bg-mute);
-  object-fit: contain;
-  padding: var(--space-2);
+  object-fit: cover;
 }
 
 .order-item-info {

@@ -54,11 +54,15 @@
   overflow: hidden;
 }
 
+/* 详情页大图
+   ------------------------------------------------------------
+   真实照片用 cover 铺满正方形区域。
+   去掉 padding，否则照片四周会有一圈空白，看起来不像商品主图。
+*/
 .detail-image-box img {
   width: 100%;
   height: 100%;
-  object-fit: contain;
-  padding: var(--space-10);
+  object-fit: cover;
   transition: transform var(--transition-slow);
 }
 
