@@ -1,15 +1,18 @@
 /**
  * 订单相关接口
  * ------------------------------------------------------------
- * POST /api/orders        创建订单（登录与否都可以下单）
+ * POST /api/orders        创建订单（必须登录）
  * GET  /api/orders/:id    查询单笔订单
- * GET  /api/orders        查询订单列表
+ * GET  /api/orders        查询订单列表（必须登录）
  *
- * 【为什么不登录也能下单？】
- * 商城的基本流程不能因为"要登录"就被挡住 ——
- * 一个只是想试试的人，应该能直接加购物车、直接下单，不用先注册。
- * 所以这里保留游客下单，只是给登录用户的订单记上 userId，
- * 这样登录之后就能看到「我的订单」。
+ * 【下单必须登录】
+ * 按真实电商的标准，下单是需要身份的操作 ——
+ * 订单要记到某个账号名下，将来才能查物流、售后、开发票。
+ * 所以这里强制要求登录，未登录直接返回 401。
+ *
+ * 但浏览商品、搜索筛选、加购物车都不需要登录，
+ * 用户可以先把东西放购物车，等想结算时再登录。
+ * 这是大多数电商的常见做法。
  */
 
 const express = require('express');
@@ -28,12 +31,26 @@ const router = express.Router();
  * }
  */
 router.post('/orders', function (req, res) {
-  // 带了有效登录凭证就记到这个用户名下，
-  // 没登录也不拦着，userId 为 null，属于游客订单
   const user = auth.getUserFromRequest(req);
 
+  /* 未登录直接拒绝。
+     401 表示"你没有登录"，前端收到 401 会弹出登录框。
+
+     为什么前端也拦了还要在这里再拦一次？
+     因为前端拦截只是给人看的体验 ——
+     用任何工具（Postman、curl、浏览器控制台）都能绕过前端直接调接口。
+     后端才是真正的关卡，安全永远靠后端守。 */
+  if (!user) {
+    return res.status(401).json({
+      code: 401,
+      message: '请先登录后再下单'
+    });
+  }
+
   const payload = Object.assign({}, req.body);
-  payload.userId = user ? user.id : null;
+  // 订单归属以服务端识别出的用户为准，
+  // 绝对不能用前端传来的 userId —— 那样谁都能冒充别人下单
+  payload.userId = user.id;
 
   const result = store.createOrder(payload);
 
@@ -48,58 +65,48 @@ router.post('/orders', function (req, res) {
 
 /**
  * GET /api/orders/:id
+ *
+ * 查单笔订单。
+ * 单笔查询允许未登录访问（要拿着完整订单号才能查到，
+ * 订单号是随机的，猜不到），但登录用户只能查自己的。
  */
 router.get('/orders/:id', function (req, res) {
   const order = store.findOrderById(req.params.id);
   if (!order) {
     return res.status(404).json({ code: 404, message: '订单不存在' });
   }
+
+  // 如果这单属于某个用户，那我就必须就是这个用户才能看
+  const user = auth.getUserFromRequest(req);
+  if (order.userId && (!user || user.id !== order.userId)) {
+    return res.status(403).json({ code: 403, message: '无权查看这笔订单' });
+  }
+
   res.json({ code: 0, message: 'ok', data: order });
 });
 
 /**
  * GET /api/orders
  * ------------------------------------------------------------
- * 三种情况：
- *
- * 1. 已登录            → 返回这个账号的所有订单
- * 2. 未登录 + 带 ids   → 按订单号返回（本机下过的单）
- *                        例：?ids=CN2026xxx-123,CN2026xxx-456
- * 3. 未登录 + 没带 ids → 返回空数组
- *
- * 第 3 种返回空，而不是返回全部 ——
- * 订单里有收货人姓名、电话、地址，属于隐私，
- * 不能因为没登录就把所有人的订单都吐出来。
+ * 只返回当前登录用户的订单。
+ * 未登录时返回 401，不再支持"按订单号批量查"的游客模式 ——
+ * 既然下单必须登录，就不存在游客订单了。
  */
 router.get('/orders', function (req, res) {
   const user = auth.getUserFromRequest(req);
 
-  // 情况 1：已登录，看自己的订单
-  if (user) {
-    return res.json({
-      code: 0,
-      message: 'ok',
-      data: store.listOrdersByUser(user.id)
+  if (!user) {
+    return res.status(401).json({
+      code: 401,
+      message: '请先登录后查看订单'
     });
   }
 
-  // 情况 2：未登录，但前端传了本机的订单号
-  const idsParam = req.query.ids;
-  if (idsParam) {
-    const ids = String(idsParam)
-      .split(',')
-      .map(function (s) { return s.trim(); })
-      .filter(Boolean);
-
-    return res.json({
-      code: 0,
-      message: 'ok',
-      data: store.listOrdersByIds(ids)
-    });
-  }
-
-  // 情况 3：什么都没有，返回空
-  res.json({ code: 0, message: 'ok', data: [] });
+  res.json({
+    code: 0,
+    message: 'ok',
+    data: store.listOrdersByUser(user.id)
+  });
 });
 
 module.exports = router;

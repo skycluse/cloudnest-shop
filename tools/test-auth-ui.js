@@ -189,9 +189,9 @@ async function main() {
   }
 
   /* ============================================================
-     6. 游客也能购物（不受登录影响）
+     6. 登录状态下购物流程正常
      ============================================================ */
-  console.log('\n[6] 商城基本功能未受影响');
+  console.log('\n[6] 登录状态下购物正常');
 
   const cards = home.d.querySelectorAll('.product-card');
   if (cards.length > 0) ok(`商品列表正常渲染（${cards.length} 张卡片）`);
@@ -202,8 +202,19 @@ async function main() {
   await new Promise((r) => setTimeout(r, 1400));
 
   const badge = home.d.querySelector('#cartBadge');
-  if (badge && !badge.hidden) ok('登录状态下加购物车仍正常（角标 ' + badge.textContent + '）');
+  if (badge && !badge.hidden) ok('已登录，加购物车正常（角标 ' + badge.textContent + '）');
   else fail('登录后加购物车坏了');
+
+  // 顺手验证结算能打开
+  home.w.components.openCheckout();
+  await new Promise((r) => setTimeout(r, 500));
+  if (!home.d.querySelector('#checkoutMask').hidden) {
+    ok('已登录，结算弹窗能正常打开');
+  } else {
+    fail('登录后结算弹窗打不开');
+  }
+  home.w.components.closeCheckout();
+  await new Promise((r) => setTimeout(r, 300));
 
   /* ============================================================
      7. 退出登录
@@ -332,18 +343,122 @@ async function main() {
   const guestOrders = await loadPage('/orders.html');
 
   const guestTitle = guestOrders.d.querySelector('#ordersTitle');
-  if (guestTitle && guestTitle.textContent.includes('本机')) {
+  if (guestTitle && guestTitle.textContent.includes('我的订单')) {
     ok('未登录时标题显示为「' + guestTitle.textContent.trim() + '」');
   } else {
-    fail('未登录时标题应该是「本机订单」', guestTitle && guestTitle.textContent);
+    fail('未登录时标题应该是「我的订单」', guestTitle && guestTitle.textContent);
   }
 
-  // 未登录也没有订单时，应该引导去登录
+  // 未登录应该看到"请先登录"引导，而不是订单列表
   const emptyBox = guestOrders.d.querySelector('.orders-empty');
-  if (emptyBox && emptyBox.innerHTML.includes('登录')) {
-    ok('空状态里提供了登录入口');
+  if (emptyBox && emptyBox.innerHTML.includes('请先登录')) {
+    ok('未登录时显示「请先登录」引导');
   } else {
-    fail('空状态里没有登录引导');
+    fail('未登录时没有显示登录引导',
+         emptyBox && emptyBox.textContent.slice(0, 100));
+  }
+
+  if (emptyBox && emptyBox.innerHTML.includes('登录 / 注册')) {
+    ok('引导里提供了登录按钮');
+  } else {
+    fail('引导里没有登录按钮');
+  }
+
+  /* ============================================================
+     12. 未登录不能加购物车
+     ============================================================ */
+  console.log('\n[12] 未登录不能加购物车和结算');
+
+  const guestHome = await loadPage('/index.html');
+
+  if (guestHome.errors.length === 0) ok('未登录首页加载无报错');
+  else fail('未登录首页有报错', guestHome.errors.join('\n'));
+
+  // 点加购，应该弹登录框而不是加进购物车
+  const guestAddBtn = guestHome.d.querySelector('.btn-add:not([disabled])');
+  if (guestAddBtn) {
+    guestAddBtn.dispatchEvent(new guestHome.w.MouseEvent('click', { bubbles: true }));
+    await new Promise((r) => setTimeout(r, 800));
+
+    const guestBadge = guestHome.d.querySelector('#cartBadge');
+    const cartIsEmpty = !guestBadge || guestBadge.hidden;
+    if (cartIsEmpty) {
+      ok('未登录点加购，商品没有进购物车');
+    } else {
+      fail('未登录竟然加进了购物车', '角标=' + guestBadge.textContent);
+    }
+
+    const guestAuthMask = guestHome.d.querySelector('#authMask');
+    if (guestAuthMask && !guestAuthMask.hidden) {
+      ok('未登录点加购，弹出了登录框');
+    } else {
+      fail('未登录点加购，没有弹登录框');
+    }
+  } else {
+    fail('找不到加购按钮');
+  }
+
+  // 直接调用结算也要被拦住
+  guestHome.w.components.closeAuthModal && guestHome.w.components.closeAuthModal();
+  guestHome.d.querySelector('#authMask').hidden = true;
+
+  // 先手动塞一个商品到购物车，再试结算
+  const firstProduct = await fetch(SERVER + '/api/products/1').then((r) => r.json());
+  guestHome.w.cart.add(firstProduct.data, 1);
+  await new Promise((r) => setTimeout(r, 400));
+
+  guestHome.w.components.openCheckout();
+  await new Promise((r) => setTimeout(r, 600));
+
+  if (guestHome.d.querySelector('#checkoutMask').hidden) {
+    ok('未登录点结算，结算弹窗不会打开');
+  } else {
+    fail('未登录竟然打开了结算弹窗');
+  }
+
+  if (!guestHome.d.querySelector('#authMask').hidden) {
+    ok('未登录点结算，弹出的是登录框');
+  } else {
+    fail('未登录点结算，没有弹登录框');
+  }
+
+  /* ============================================================
+     13. 未登录时 AI 助手不能操作购物车
+     ============================================================ */
+  console.log('\n[13] 未登录时 AI 助手拒绝写操作');
+
+  const guestAgent = guestHome.w.agent;
+  if (guestAgent && guestAgent.tools) {
+    let addFailed = false;
+    try {
+      await guestAgent.tools.addToCart(1, 1);
+    } catch (e) {
+      addFailed = true;
+      if (e.message.includes('登录')) ok('AI 加购被拒绝：' + e.message);
+      else fail('AI 加购的错误提示不明确', e.message);
+    }
+    if (!addFailed) fail('AI 在未登录状态下竟然加购成功了');
+
+    let orderFailed = false;
+    try {
+      await guestAgent.tools.createOrder();
+    } catch (e) {
+      orderFailed = true;
+      if (e.message.includes('登录')) ok('AI 下单被拒绝：' + e.message);
+      else fail('AI 下单的错误提示不明确', e.message);
+    }
+    if (!orderFailed) fail('AI 在未登录状态下竟然下单成功了');
+
+    // 只读操作不受限制
+    try {
+      const res = await guestAgent.tools.searchProducts({ category: 'audio', limit: 3 });
+      if (res.total > 0) ok('未登录时 AI 仍可搜索商品（只读操作不受限制）');
+      else fail('AI 搜索异常');
+    } catch (e) {
+      fail('AI 搜索结果异常', e.message);
+    }
+  } else {
+    fail('AI 助手没加载');
   }
 
   /* ---------- 汇总 ---------- */

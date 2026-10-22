@@ -218,6 +218,11 @@ function bindDetailEvents(product) {
   var addCartBtn = utils.$('#detailAddCart');
   if (addCartBtn) {
     addCartBtn.addEventListener('click', async function () {
+      // 未登录先弹登录框，不要继续往下走
+      if (window.auth && !window.auth.requireLogin('加入购物车')) {
+        return;
+      }
+
       addCartBtn.disabled = true;
       var originalText = addCartBtn.textContent;
       addCartBtn.textContent = '添加中…';
@@ -246,6 +251,10 @@ function bindDetailEvents(product) {
   var buyNowBtn = utils.$('#detailBuyNow');
   if (buyNowBtn) {
     buyNowBtn.addEventListener('click', async function () {
+      if (window.auth && !window.auth.requireLogin('购买')) {
+        return;
+      }
+
       buyNowBtn.disabled = true;
       var originalText = buyNowBtn.textContent;
       buyNowBtn.textContent = '处理中…';

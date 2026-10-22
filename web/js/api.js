@@ -161,14 +161,10 @@ function getOrder(id) {
 }
 
 /**
- * 查订单列表
- * @param {object} params 可选。未登录时传 { ids: '订单号1,订单号2' } 查本机订单
+ * 查订单列表（只返回当前登录用户的订单，未登录会返回 401）
  */
-function getOrders(params) {
-  var query = params && params.ids
-    ? '?ids=' + encodeURIComponent(params.ids)
-    : '';
-  return request('/orders' + query);
+function getOrders() {
+  return request('/orders');
 }
 
 /* ============================================================

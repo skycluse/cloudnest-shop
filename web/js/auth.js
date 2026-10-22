@@ -391,8 +391,10 @@ async function submitAuthForm() {
     closeAuthModal();
     utils.toast(result.message, 'success');
 
-    // 登录/注册成功后，如果当前在订单页，刷新一下列表
-    // （因为从"本机订单"变成"我的订单"了）
+    // 登录/注册成功后，如果当前在订单页，刷新一下订单列表。
+    // 注意：如果用户是在"加购物车/结算"时被拦下来登录的，
+    // 这里不会自动重试刚才的操作 —— 需要用户再点一次。
+    // 这样做是有意的：自动重试容易让人搞不清到底做了什么。
     if (typeof window.refreshOrdersAfterAuth === 'function') {
       window.refreshOrdersAfterAuth();
     }
@@ -552,6 +554,35 @@ async function doInitAuth() {
 }
 
 /* ============================================================
+   六、需要登录才能做的操作
+   ------------------------------------------------------------
+   加购物车、结算、下单这些操作都要先登录。
+   每个地方都写一遍 if 判断会很啰嗦，而且提示文字容易不一致，
+   所以统一放在这个函数里。
+
+   用法：
+     if (!window.auth.requireLogin('加入购物车')) return;
+     ...继续原来的逻辑
+   ============================================================ */
+
+/**
+ * 检查是否已登录。没登录就弹登录框并提示。
+ *
+ * @param {string} actionName 操作名称，用来拼提示语，如"加入购物车"
+ * @returns {boolean} true 表示已登录，可以继续；false 表示已弹框，调用处应 return
+ */
+function requireLogin(actionName) {
+  if (isLoggedIn()) {
+    return true;
+  }
+
+  var name = actionName || '进行这个操作';
+  utils.toast('请先登录后再' + name, 'info');
+  openAuthModal('login');
+  return false;
+}
+
+/* ============================================================
    七、导出
    ============================================================ */
 
@@ -562,6 +593,7 @@ window.auth = {
   subscribe: subscribeAuth,
   open: openAuthModal,
   close: closeAuthModal,
+  requireLogin: requireLogin,
   logout: doLogout,
   state: authState
 };

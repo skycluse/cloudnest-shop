@@ -172,6 +172,26 @@ async function main() {
      ============================================================ */
   console.log('\n[2] 购物车交互');
 
+  /* 现在加购物车必须登录，所以先在这个页面里登录一下。
+     用后端直接注册一个账号拿到 token，塞进 localStorage，
+     再让 auth 模块重新识别一次登录状态。 */
+  const stamp = Date.now().toString().slice(-8);
+  const regRes = await fetch(SERVER + '/api/auth/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: 'cart_' + stamp, password: 'test123456' })
+  }).then((r) => r.json());
+
+  home.window.localStorage.setItem('cloudnest_token', regRes.data.token);
+  await home.window.auth.init();
+  await new Promise((r) => setTimeout(r, 600));
+
+  if (home.window.auth.isLoggedIn()) {
+    ok('已登录，可以测试购物车');
+  } else {
+    fail('登录失败，购物车测试无法进行');
+  }
+
   // 找到第一个加购按钮并点击
   const addBtn = home.document.querySelector('.btn-add:not([disabled])');
   if (addBtn) {

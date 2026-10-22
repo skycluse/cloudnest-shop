@@ -5,16 +5,9 @@
    1. orders.html          → 订单列表
    2. orders.html?id=xxx   → 顶部额外显示某一笔订单的详情
 
-   【订单列表显示谁的订单？】
-   已登录 → 显示「我的订单」，由后端按 userId 查
-   未登录 → 显示「本机订单」，靠 localStorage 里记的订单号查
-
-   为什么要区分？
-   因为订单含姓名、电话、地址，属于隐私，
-   后端不能把所有人的订单都返回给未登录的人。
-
-   注意：记录/读取本机订单号的函数在 components.js 里，
-   因为首页下单时也要记录，而 orders.js 只在订单页加载。
+   【必须先登录】
+   下单要求登录，所以订单一定挂在某个账号下。
+   未登录访问订单页会显示登录引导，不发请求。
    ============================================================ */
 
 /* ============================================================
@@ -123,32 +116,24 @@ function renderOrdersList(orders) {
   var title = utils.$('#ordersTitle');
   if (!container) return;
 
-  var loggedIn = window.auth && window.auth.isLoggedIn();
-  var user = loggedIn ? window.auth.getUser() : null;
+  // 走到这个函数时一定是已登录（未登录在 loadAllOrders 里就拦下了）
+  var user = window.auth ? window.auth.getUser() : null;
 
-  // 标题目录根据登录状态变化，让用户知道自己看的是哪一份订单
   if (title) {
-    title.textContent = loggedIn ? (user.nickname + ' 的订单') : '本机订单';
+    title.textContent = user ? (user.nickname + ' 的订单') : '我的订单';
   }
 
   /* ---- 一条订单都没有 ---- */
   if (!orders || orders.length === 0) {
-    if (sub) {
-      sub.textContent = loggedIn ? '这个账号还没有订单' : '这个浏览器还没有下过单';
-    }
+    if (sub) sub.textContent = '这个账号还没有订单';
 
     container.innerHTML =
       '<div class="orders-empty">' +
         '<div class="orders-empty-icon">' + window.icons.icon('receipt', 34) + '</div>' +
         '<h3>还没有订单</h3>' +
-        (loggedIn
-          ? '<p>去商城挑几件喜欢的商品吧</p>'
-          : '<p>你现在没有登录，这里显示的是本机下过的单。<br />登录后可以看到账号下的全部订单。</p>') +
+        '<p>去商城挑几件喜欢的商品吧</p>' +
         '<div class="orders-empty-actions">' +
           '<a class="btn btn-primary" href="./index.html#products">去逛逛</a>' +
-          (loggedIn
-            ? ''
-            : '<button class="btn btn-outline" type="button" onclick="window.auth.open(\'login\')">登录</button>') +
         '</div>' +
       '</div>';
     return;
@@ -163,8 +148,7 @@ function renderOrdersList(orders) {
   }
 
   if (sub) {
-    sub.textContent = '共 ' + orders.length + ' 笔订单' +
-      (loggedIn ? '' : '（仅本机，登录后可看全部）');
+    sub.textContent = '共 ' + orders.length + ' 笔订单';
   }
 
   var statsHtml =
@@ -261,41 +245,65 @@ function renderSingleOrder(order) {
  */
 async function loadAllOrders() {
   var container = utils.$('#ordersList');
-  if (container) container.innerHTML = '<p class="loading-text">订单加载中…</p>';
+  if (!container) return;
+
+  /* 未登录不请求接口，直接显示登录引导。
+     下单必须登录，所以不存在"游客订单"了，没必要发请求。 */
+  if (!window.auth || !window.auth.isLoggedIn()) {
+    renderLoggedOutState();
+    return;
+  }
+
+  container.innerHTML = '<p class="loading-text">订单加载中…</p>';
 
   try {
-    /* 分两种情况：
-       已登录 → 后端会自动按 userId 返回「我的订单」
-       未登录 → 传本机记下的订单号，查回这个浏览器下过的单
-
-       为什么未登录要这样做？
-       因为订单里有收货人姓名、电话、地址，属于隐私。
-       后端不能因为"没登录"就把所有人的订单都返回，
-       所以改成由前端告诉后端"我本机下过这几单"，只查这几单。 */
-    var orders;
-    if (window.auth && window.auth.isLoggedIn()) {
-      orders = await window.api.getOrders();
-    } else {
-      var localIds = window.components.getLocalOrderIds();
-      orders = localIds.length > 0
-        ? await window.api.getOrders({ ids: localIds.join(',') })
-        : [];
-    }
-
+    // 已登录：后端按 userId 返回「我的订单」
+    var orders = await window.api.getOrders();
     renderOrdersList(orders);
 
   } catch (err) {
     console.error('订单加载失败：', err);
-    if (container) {
-      container.innerHTML =
-        '<div class="orders-empty">' +
-          '<div class="orders-empty-icon">' + window.icons.icon('alertCircle', 34) + '</div>' +
-          '<h3>订单加载失败</h3>' +
-          '<p>' + utils.escapeHtml(err.message) + '</p>' +
-          '<button class="btn btn-primary" onclick="location.reload()">重新加载</button>' +
-        '</div>';
+
+    // 401 说明登录状态失效了（token 过期或账号没了），
+    // 这不是"加载失败"，应该引导重新登录
+    if (err.status === 401) {
+      renderLoggedOutState();
+      return;
     }
+
+    container.innerHTML =
+      '<div class="orders-empty">' +
+        '<div class="orders-empty-icon">' + window.icons.icon('alertCircle', 34) + '</div>' +
+        '<h3>订单加载失败</h3>' +
+        '<p>' + utils.escapeHtml(err.message) + '</p>' +
+        '<button class="btn btn-primary" onclick="location.reload()">重新加载</button>' +
+      '</div>';
   }
+}
+
+/**
+ * 未登录时订单页显示的内容
+ */
+function renderLoggedOutState() {
+  var container = utils.$('#ordersList');
+  var sub = utils.$('#ordersSub');
+  var title = utils.$('#ordersTitle');
+  if (!container) return;
+
+  if (title) title.textContent = '我的订单';
+  if (sub) sub.textContent = '登录后查看你的订单记录';
+
+  container.innerHTML =
+    '<div class="orders-empty">' +
+      '<div class="orders-empty-icon">' + window.icons.icon('user', 34) + '</div>' +
+      '<h3>请先登录</h3>' +
+      '<p>登录后可以查看自己的订单记录</p>' +
+      '<div class="orders-empty-actions">' +
+        '<button class="btn btn-primary" type="button" ' +
+                'onclick="window.auth.open(\'login\')">登录 / 注册</button>' +
+        '<a class="btn btn-outline" href="./index.html#products">去逛逛</a>' +
+      '</div>' +
+    '</div>';
 }
 
 /**
@@ -375,8 +383,8 @@ async function initOrdersPage() {
    六、给 auth.js 用的钩子
    ------------------------------------------------------------
    登录或退出之后，订单列表要跟着变：
-   登录 → 从「本机订单」切到「我的订单」
-   退出 → 从「我的订单」切回「本机订单」
+   登录 → 显示这个账号的订单
+   退出 → 回到"请先登录"的引导
 
    auth.js 里判断了这个函数存不存在再调用，
    所以在其它页面（首页、详情页）不会报错。
@@ -388,8 +396,5 @@ window.refreshOrdersAfterAuth = function () {
     loadAllOrders();
   }
 };
-
-// 让「下单时记录订单号」这段逻辑能被 components.js 调用
-window.rememberLocalOrderId = rememberLocalOrderId;
 
 document.addEventListener('DOMContentLoaded', initOrdersPage);
