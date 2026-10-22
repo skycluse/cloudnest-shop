@@ -7,8 +7,8 @@
  * 1. 密码不能明文存（检查 users.json）
  * 2. 接口不能返回 passwordHash / salt
  * 3. 重复注册、错误密码、未登录都要被正确拒绝
- * 4. 未登录也能下单（不影响商城基本流程）
- * 5. 登录后能只看到自己的订单
+ * 4. 未登录不能下单（必须登录才能买）
+ * 5. 登录后只能看到自己的订单，也看不到别人的订单详情
  *
  * 运行：node tools/test-auth.js（需要先 npm start）
  */
@@ -206,24 +206,50 @@ async function main() {
   }
 
   /* ============================================================
-     6. 未登录也能下单（不影响商城基本流程）
+     6. 未登录不能下单（必须登录）
      ============================================================ */
-  console.log('\n[6] 游客下单（不登录也能买）');
+  console.log('\n[6] 未登录不能下单');
 
   const guestOrder = await api('POST', '/api/orders', {
     items: [{ productId: 1, quantity: 1 }],
     customer: { name: '游客', phone: '13800138000', address: '测试地址 1 号' }
   });
 
-  if (guestOrder.status === 201 && guestOrder.body.data) {
-    ok('未登录可以正常下单（订单 userId 为 null）');
-    if (guestOrder.body.data.userId === null) {
-      ok('游客订单的 userId 确实为 null');
-    } else {
-      fail('游客订单的 userId 应该是 null', String(guestOrder.body.data.userId));
-    }
+  if (guestOrder.status === 401) {
+    ok('未登录下单被拒绝（401）');
   } else {
-    fail('未登录下单失败，影响了基本流程', JSON.stringify(guestOrder.body));
+    fail('未登录竟然能下单，不符合"必须登录"的要求',
+         `status=${guestOrder.status}`);
+  }
+
+  if (guestOrder.body && guestOrder.body.message && guestOrder.body.message.includes('登录')) {
+    ok('拒绝时的提示是：' + guestOrder.body.message);
+  } else {
+    fail('提示语不够明确', JSON.stringify(guestOrder.body));
+  }
+
+  // 伪造 token 也不能下单
+  const fakeOrder = await api('POST', '/api/orders', {
+    items: [{ productId: 1, quantity: 1 }],
+    customer: { name: '游客', phone: '13800138000', address: '测试地址 1 号' }
+  }, 'fake-token-should-not-work');
+  if (fakeOrder.status === 401) {
+    ok('伪造 token 下单也被拒绝');
+  } else {
+    fail('伪造 token 竟然能下单', 'status=' + fakeOrder.status);
+  }
+
+  // 关键：不能让前端传 userId 冒充别人
+  const spoofOrder = await api('POST', '/api/orders', {
+    items: [{ productId: 1, quantity: 1 }],
+    customer: { name: '冒充者', phone: '13800138000', address: '测试地址 1 号' },
+    userId: 99999
+  }, tokenA);
+  if (spoofOrder.status === 201 && spoofOrder.body.data.userId === regA.body.data.user.id) {
+    ok('订单归属以服务端识别的用户为准（前端传 userId 无效）');
+  } else {
+    fail('前端传的 userId 竟然生效了，能被冒充下单！',
+         JSON.stringify(spoofOrder.body.data && { userId: spoofOrder.body.data.userId }));
   }
 
   /* ============================================================
@@ -238,7 +264,7 @@ async function main() {
 
   let myOrderId = '';
   if (userOrder.status === 201 && userOrder.body.data.userId) {
-    ok('登录后下单，订单记到了用户名下');
+    ok('登录后下单成功，订单记到了用户名下');
     myOrderId = userOrder.body.data.id;
   } else {
     fail('登录下单没有绑定用户', JSON.stringify(userOrder.body));
@@ -246,7 +272,7 @@ async function main() {
 
   const myOrders = await api('GET', '/api/orders', null, tokenA);
   if (myOrders.body.data.length > 0 && myOrders.body.data.every((o) => o.userId === regA.body.data.user.id)) {
-    ok(`查到了自己的 ${myOrders.body.data.length} 笔订单，全部属于自己`);
+    ok(`查到自己的 ${myOrders.body.data.length} 笔订单，全部属于自己`);
   } else {
     fail('我的订单列表不对', JSON.stringify(myOrders.body.data));
   }
@@ -260,23 +286,32 @@ async function main() {
     fail('用户B看到了别人的订单，数据泄漏！', String(bOrders.body.data.length));
   }
 
+  // 也不能通过订单号直接看别人的单
+  const peekOther = await api('GET', '/api/orders/' + encodeURIComponent(myOrderId), null, loginB.body.data.token);
+  if (peekOther.status === 403) {
+    ok('用户B按订单号查用户A的订单被拒绝（403）');
+  } else {
+    fail('用户B能看到别人的订单详情，越权！', 'status=' + peekOther.status);
+  }
+
   /* ============================================================
      8. 未登录时的订单查询
      ============================================================ */
   console.log('\n[8] 未登录时的订单查询');
 
   const guestAll = await api('GET', '/api/orders');
-  if (Array.isArray(guestAll.body.data) && guestAll.body.data.length === 0) {
-    ok('未登录且不带订单号时返回空（不会泄露所有人的订单）');
+  if (guestAll.status === 401) {
+    ok('未登录查订单列表被拒绝（401）');
   } else {
-    fail('未登录竟然能拿到订单列表，隐私泄漏', JSON.stringify(guestAll.body.data).slice(0, 150));
+    fail('未登录竟然能拿到订单列表', 'status=' + guestAll.status);
   }
 
-  const guestByIds = await api('GET', '/api/orders?ids=' + encodeURIComponent(guestOrder.body.data.id));
-  if (guestByIds.body.data.length === 1 && guestByIds.body.data[0].id === guestOrder.body.data.id) {
-    ok('带上本机订单号可以查回自己的游客订单');
+  // 老的 ?ids= 参数已经不支持了
+  const guestByIds = await api('GET', '/api/orders?ids=' + encodeURIComponent(myOrderId));
+  if (guestByIds.status === 401) {
+    ok('未登录按订单号批量查也被拒绝（旧接口已关闭）');
   } else {
-    fail('按订单号查游客订单失败', JSON.stringify(guestByIds.body.data).slice(0, 150));
+    fail('未登录还能按订单号批量查订单', 'status=' + guestByIds.status);
   }
 
   /* ============================================================

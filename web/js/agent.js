@@ -101,6 +101,14 @@ function toolGetCart() {
  * 工具 4：加入购物车（写操作 —— 必须先确认）
  */
 async function toolAddToCart(productId, quantity) {
+  /* 和真实电商一致：加购物车、下单都要登录。
+     这里不弹登录框，而是抛一个明确的错误，
+     让 Agent 用自然语言告诉用户"需要先登录" ——
+     比突然弹一个窗口打断对话体验更好。 */
+  if (!isAgentAllowedToWrite()) {
+    throw new Error('请先登录。登录后我才能帮你加购物车和下单');
+  }
+
   var product = await window.api.getProduct(productId);
   var result = cart.add(product, quantity || 1);
   if (!result.ok) throw new Error(result.message);
@@ -111,6 +119,10 @@ async function toolAddToCart(productId, quantity) {
  * 工具 5：修改购物车数量（写操作 —— 必须先确认）
  */
 function toolUpdateCartItem(productId, quantity) {
+  if (!isAgentAllowedToWrite()) {
+    throw new Error('请先登录。登录后我才能帮你修改购物车');
+  }
+
   var result = cart.updateQuantity(productId, quantity);
   if (!result.ok) throw new Error(result.message);
   return { ok: true };
@@ -120,6 +132,10 @@ function toolUpdateCartItem(productId, quantity) {
  * 工具 6：移除购物车商品（写操作 —— 必须先确认）
  */
 function toolRemoveFromCart(productId) {
+  if (!isAgentAllowedToWrite()) {
+    throw new Error('请先登录。登录后我才能帮你修改购物车');
+  }
+
   var result = cart.remove(productId);
   if (!result.ok) throw new Error(result.message);
   return { ok: true };
@@ -129,9 +145,14 @@ function toolRemoveFromCart(productId) {
  * 工具 7：创建订单（写操作 —— 必须先确认）
  */
 async function toolCreateOrder() {
+  if (!isAgentAllowedToWrite()) {
+    throw new Error('请先登录。登录后我才能帮你下单');
+  }
+
   if (cart.isEmpty()) {
     throw new Error('购物车是空的，无法下单');
   }
+
   var order = await window.api.createOrder({
     items: cart.toOrderItems(),
     customer: { name: 'AI 助手代下单', phone: '13800138000', address: '待用户补充收货地址' },
@@ -139,6 +160,18 @@ async function toolCreateOrder() {
   });
   cart.clear();
   return order;
+}
+
+/**
+ * Agent 能不能执行写操作（加购 / 改购物车 / 下单）。
+ *
+ * 规则和商城一致：必须登录。
+ * 查商品、查购物车这类只读操作不受限制，
+ * 未登录也能问"500 元以内的耳机有吗"，只是不能真买。
+ */
+function isAgentAllowedToWrite() {
+  if (!window.auth) return true;   // 没加载 auth 模块时（理论上不会）不做限制
+  return window.auth.isLoggedIn();
 }
 
 /* ============================================================

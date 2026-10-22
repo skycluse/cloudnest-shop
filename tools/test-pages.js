@@ -205,8 +205,28 @@ async function main() {
     }
   }
 
-  /* ---------- 5. 下单接口的异常处理 ---------- */
+  /* ---------- 5. 下单接口的异常处理 ----------
+     ------------------------------------------------------------
+     注意：现在下单必须登录，所以测"参数校验"之前
+     要先注册一个账号拿到 token，否则会先被 401 拦下来，
+     测不到真正的参数校验逻辑。 */
   console.log('\n[5] 下单接口的异常处理');
+
+  const stamp = Date.now().toString().slice(-8);
+  const regRes = await fetch(SERVER + '/api/auth/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: 'pages_' + stamp, password: 'test123456' })
+  }).then((r) => r.json());
+
+  const token = regRes.data ? regRes.data.token : '';
+  if (token) ok('已登录，可以测试下单校验');
+  else fail('注册失败，无法测试下单', JSON.stringify(regRes));
+
+  const authHeaders = {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer ' + token
+  };
 
   const badCases = [
     { name: '空商品列表', body: { items: [], customer: { name: 'a', phone: '13800138000', address: 'x' } }, expect: '订单商品不能为空' },
@@ -219,7 +239,7 @@ async function main() {
   for (const c of badCases) {
     const res = await fetch(SERVER + '/api/orders', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders,
       body: JSON.stringify(c.body)
     });
     const data = await res.json();
@@ -229,6 +249,21 @@ async function main() {
     } else {
       fail(`「${c.name}」没有被正确拒绝`, `status=${res.status} message=${data.message}`);
     }
+  }
+
+  // 未登录下单必须被拦
+  const guestOrder = await fetch(SERVER + '/api/orders', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      items: [{ productId: 1, quantity: 1 }],
+      customer: { name: 'a', phone: '13800138000', address: 'x' }
+    })
+  });
+  if (guestOrder.status === 401) {
+    ok('未登录下单返回 401（必须登录）');
+  } else {
+    fail('未登录竟然能下单，实际 ' + guestOrder.status);
   }
 
   /* ---------- 6. 订单查询 ---------- */
@@ -241,11 +276,21 @@ async function main() {
     fail('不存在的订单应返回 404，实际 ' + notFound.status);
   }
 
-  const listOrders = await (await fetch(SERVER + '/api/orders')).json();
+  const listOrders = await fetch(SERVER + '/api/orders', {
+    headers: { 'Authorization': 'Bearer ' + token }
+  }).then((r) => r.json());
+
   if (listOrders.code === 0 && Array.isArray(listOrders.data)) {
-    ok(`订单列表接口正常（当前 ${listOrders.data.length} 笔）`);
+    ok(`登录后订单列表接口正常（当前 ${listOrders.data.length} 笔）`);
   } else {
-    fail('订单列表接口异常');
+    fail('订单列表接口异常', JSON.stringify(listOrders).slice(0, 150));
+  }
+
+  const guestList = await fetch(SERVER + '/api/orders');
+  if (guestList.status === 401) {
+    ok('未登录查订单列表返回 401');
+  } else {
+    fail('未登录能查订单列表，实际 ' + guestList.status);
   }
 
   /* ---------- 7. 静态资源的 MIME 类型 ---------- */
