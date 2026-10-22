@@ -1,0 +1,5 @@
+﻿chore: 清理无关文件，README 的 tools 说明与实际一致
+
+- 删除空文件 使用指南.txt
+- 删除 tools/make_images.py（它生成的是已被替换掉的 SVG 图标，不再有用）
+- README 的 tools 目录说明补全为实际的 8 个脚本
