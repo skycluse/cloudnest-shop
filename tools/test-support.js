@@ -253,6 +253,72 @@ async function main() {
   }
 
   /* ============================================================
+     5.5 快捷问题按钮能点（回归测试）
+     ------------------------------------------------------------
+     面板里有两处快捷问题：
+     · 底部固定的一条（#supportChips）
+     · 每条回复下方动态生成的追问（.support-quick）
+
+     这个 bug 真实发生过：事件只绑在 #supportChips 上，
+     消息下方的追问按钮点了完全没反应。
+     所以这里两个位置都要测。
+     ============================================================ */
+  console.log('\n[5.5] 快捷问题按钮可以点击');
+
+  // ---- 底部固定的快捷问题 ----
+  const bottomChips = guest.d.querySelectorAll('#supportChips .chip');
+  if (bottomChips.length > 0) {
+    ok(`底部有 ${bottomChips.length} 个快捷问题`);
+
+    const before = guest.d.querySelectorAll('#supportBody .msg-assistant .msg-bubble').length;
+    bottomChips[2].dispatchEvent(new guest.w.MouseEvent('click', { bubbles: true }));
+    await new Promise((r) => setTimeout(r, 1800));
+
+    const after = guest.d.querySelectorAll('#supportBody .msg-assistant .msg-bubble').length;
+    if (after > before) {
+      ok('点底部快捷问题，有回复');
+    } else {
+      fail('点底部快捷问题，没有回复');
+    }
+  } else {
+    fail('底部没有快捷问题按钮');
+  }
+
+  // ---- 消息下方动态生成的追问 ----
+  const quickChips = guest.d.querySelectorAll('#supportBody .support-quick .chip');
+  if (quickChips.length > 0) {
+    ok(`回复下方有 ${quickChips.length} 个追问按钮`);
+
+    const beforeQ = guest.d.querySelectorAll('#supportBody .msg-assistant .msg-bubble').length;
+    quickChips[0].dispatchEvent(new guest.w.MouseEvent('click', { bubbles: true }));
+    await new Promise((r) => setTimeout(r, 1800));
+
+    const afterQ = guest.d.querySelectorAll('#supportBody .msg-assistant .msg-bubble').length;
+    if (afterQ > beforeQ) {
+      ok('点消息下方的追问按钮，有回复');
+    } else {
+      fail('点消息下方的追问按钮，没有回复（事件委托没覆盖到）');
+    }
+  } else {
+    fail('回复下方没有追问按钮');
+  }
+
+  // ---- 连点不会刷屏 ----
+  const beforeSpam = guest.d.querySelectorAll('#supportBody .msg-assistant .msg-bubble').length;
+  const spam = guest.d.querySelectorAll('#supportChips .chip');
+  spam[0].dispatchEvent(new guest.w.MouseEvent('click', { bubbles: true }));
+  spam[1].dispatchEvent(new guest.w.MouseEvent('click', { bubbles: true }));
+  spam[2].dispatchEvent(new guest.w.MouseEvent('click', { bubbles: true }));
+  await new Promise((r) => setTimeout(r, 2500));
+
+  const spamAdded = guest.d.querySelectorAll('#supportBody .msg-assistant .msg-bubble').length - beforeSpam;
+  if (spamAdded <= 2) {
+    ok(`连续点 3 次只处理了 ${spamAdded} 条（有防抖，不会刷屏）`);
+  } else {
+    fail('连续点击刷出多条回复', '新增 ' + spamAdded + ' 条');
+  }
+
+  /* ============================================================
      6. 找商品 → 数据来自商城
      ============================================================ */
   console.log('\n[6] 找商品');
