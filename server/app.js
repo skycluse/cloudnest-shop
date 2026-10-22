@@ -15,6 +15,7 @@ const express = require('express');
 
 const productsRouter = require('./routes/products');
 const ordersRouter = require('./routes/orders');
+const authRouter = require('./routes/auth');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -38,6 +39,7 @@ app.use(function (req, res, next) {
 /* ---------- API 路由 ---------- */
 
 app.use('/api', productsRouter);
+app.use('/api', authRouter);
 app.use('/api', ordersRouter);
 
 // 健康检查：用来确认服务活着

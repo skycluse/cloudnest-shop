@@ -1,17 +1,19 @@
 {
   "name": "cloudnest-shop",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
-  "description": "云巢商城 CloudNest - 前端 + 后端 + AI 购物助手",
+  "description": "云巢商城 CloudNest - 一个带 AI 导购助手的小型电商网站",
   "main": "server/app.js",
   "type": "commonjs",
   "scripts": {
     "start": "node server/app.js",
     "dev": "node --watch server/app.js",
-    "test": "node tools/test-agent-logic.js && node tools/test-pages.js && node tools/test-runtime.js",
+    "test": "node tools/test-agent-logic.js && node tools/test-pages.js && node tools/test-auth.js && node tools/test-runtime.js && node tools/test-auth-ui.js",
     "test:logic": "node tools/test-agent-logic.js",
     "test:pages": "node tools/test-pages.js",
-    "test:runtime": "node tools/test-runtime.js"
+    "test:auth": "node tools/test-auth.js",
+    "test:runtime": "node tools/test-runtime.js",
+    "test:auth-ui": "node tools/test-auth-ui.js"
   },
   "engines": {
     "node": ">=18"

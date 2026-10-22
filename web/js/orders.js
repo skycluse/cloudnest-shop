@@ -2,8 +2,19 @@
    orders.js —— 订单页逻辑
    ------------------------------------------------------------
    两种模式：
-   1. orders.html          → 显示所有订单列表
-   2. orders.html?id=xxx   → 高亮显示某一个订单的详情
+   1. orders.html          → 订单列表
+   2. orders.html?id=xxx   → 顶部额外显示某一笔订单的详情
+
+   【订单列表显示谁的订单？】
+   已登录 → 显示「我的订单」，由后端按 userId 查
+   未登录 → 显示「本机订单」，靠 localStorage 里记的订单号查
+
+   为什么要区分？
+   因为订单含姓名、电话、地址，属于隐私，
+   后端不能把所有人的订单都返回给未登录的人。
+
+   注意：记录/读取本机订单号的函数在 components.js 里，
+   因为首页下单时也要记录，而 orders.js 只在订单页加载。
    ============================================================ */
 
 /* ============================================================
@@ -109,17 +120,36 @@ function orderCardHtml(order) {
 function renderOrdersList(orders) {
   var container = utils.$('#ordersList');
   var sub = utils.$('#ordersSub');
+  var title = utils.$('#ordersTitle');
   if (!container) return;
+
+  var loggedIn = window.auth && window.auth.isLoggedIn();
+  var user = loggedIn ? window.auth.getUser() : null;
+
+  // 标题目录根据登录状态变化，让用户知道自己看的是哪一份订单
+  if (title) {
+    title.textContent = loggedIn ? (user.nickname + ' 的订单') : '本机订单';
+  }
 
   /* ---- 一条订单都没有 ---- */
   if (!orders || orders.length === 0) {
-    if (sub) sub.textContent = '还没有任何订单';
+    if (sub) {
+      sub.textContent = loggedIn ? '这个账号还没有订单' : '这个浏览器还没有下过单';
+    }
+
     container.innerHTML =
       '<div class="orders-empty">' +
         '<div class="orders-empty-icon">' + window.icons.icon('receipt', 34) + '</div>' +
         '<h3>还没有订单</h3>' +
-        '<p>去商城挑几件喜欢的商品吧</p>' +
-        '<a class="btn btn-primary" href="./index.html#products">去逛逛</a>' +
+        (loggedIn
+          ? '<p>去商城挑几件喜欢的商品吧</p>'
+          : '<p>你现在没有登录，这里显示的是本机下过的单。<br />登录后可以看到账号下的全部订单。</p>') +
+        '<div class="orders-empty-actions">' +
+          '<a class="btn btn-primary" href="./index.html#products">去逛逛</a>' +
+          (loggedIn
+            ? ''
+            : '<button class="btn btn-outline" type="button" onclick="window.auth.open(\'login\')">登录</button>') +
+        '</div>' +
       '</div>';
     return;
   }
@@ -133,7 +163,8 @@ function renderOrdersList(orders) {
   }
 
   if (sub) {
-    sub.textContent = '共 ' + orders.length + ' 笔订单';
+    sub.textContent = '共 ' + orders.length + ' 笔订单' +
+      (loggedIn ? '' : '（仅本机，登录后可看全部）');
   }
 
   var statsHtml =
@@ -233,7 +264,24 @@ async function loadAllOrders() {
   if (container) container.innerHTML = '<p class="loading-text">订单加载中…</p>';
 
   try {
-    var orders = await window.api.getOrders();
+    /* 分两种情况：
+       已登录 → 后端会自动按 userId 返回「我的订单」
+       未登录 → 传本机记下的订单号，查回这个浏览器下过的单
+
+       为什么未登录要这样做？
+       因为订单里有收货人姓名、电话、地址，属于隐私。
+       后端不能因为"没登录"就把所有人的订单都返回，
+       所以改成由前端告诉后端"我本机下过这几单"，只查这几单。 */
+    var orders;
+    if (window.auth && window.auth.isLoggedIn()) {
+      orders = await window.api.getOrders();
+    } else {
+      var localIds = window.components.getLocalOrderIds();
+      orders = localIds.length > 0
+        ? await window.api.getOrders({ ids: localIds.join(',') })
+        : [];
+    }
+
     renderOrdersList(orders);
 
   } catch (err) {
@@ -290,6 +338,14 @@ async function initOrdersPage() {
   cart.init();
   components.initGlobalComponents();
 
+  /* 确认登录状态。
+     会先问后端"我这个 token 对应谁"，
+     然后渲染导航栏右上角的登录按钮 / 用户菜单。
+     注意用了 await —— 后面的逻辑可能需要知道"是否已登录"。 */
+  if (window.auth && typeof window.auth.init === 'function') {
+    await window.auth.init();
+  }
+
   if (window.agent && typeof window.agent.init === 'function') {
     window.agent.init();
   }
@@ -314,5 +370,26 @@ async function initOrdersPage() {
     await loadAllOrders();
   }
 }
+
+/* ============================================================
+   六、给 auth.js 用的钩子
+   ------------------------------------------------------------
+   登录或退出之后，订单列表要跟着变：
+   登录 → 从「本机订单」切到「我的订单」
+   退出 → 从「我的订单」切回「本机订单」
+
+   auth.js 里判断了这个函数存不存在再调用，
+   所以在其它页面（首页、详情页）不会报错。
+   ============================================================ */
+
+window.refreshOrdersAfterAuth = function () {
+  // 只重新拉订单列表，不动顶部的单笔详情
+  if (utils.$('#ordersList')) {
+    loadAllOrders();
+  }
+};
+
+// 让「下单时记录订单号」这段逻辑能被 components.js 调用
+window.rememberLocalOrderId = rememberLocalOrderId;
 
 document.addEventListener('DOMContentLoaded', initOrdersPage);

@@ -221,6 +221,9 @@ function createOrder(payload) {
 
   const order = {
     id: makeOrderNo(),
+    // 谁下的单。未登录用户下单时为 null（游客订单）。
+    // 有这个字段之后，订单页就能只显示"我的订单"。
+    userId: payload.userId || null,
     items: orderItems,
     itemCount: orderItems.reduce(function (sum, it) { return sum + it.quantity; }, 0),
     totalPrice: totalPrice,
@@ -255,7 +258,35 @@ function findOrderById(id) {
 }
 
 /**
- * 查全部订单（最新的在前）。有了用户系统后可以按 userId 过滤。
+ * 查某个用户的全部订单（最新的在前）。
+ */
+function listOrdersByUser(userId) {
+  const target = Number(userId);
+  return readOrders().filter(function (o) {
+    return Number(o.userId) === target;
+  });
+}
+
+/**
+ * 按订单号批量查订单。用于"未登录但本机下过单"的场景：
+ * 前端把本机订单号列表传上来，这里按 id 查回来。
+ *
+ * 为什么要限制最多 50 个？
+ * 防止有人传一万个 id 来探测别人的订单。
+ */
+function listOrdersByIds(ids) {
+  if (!Array.isArray(ids) || ids.length === 0) return [];
+
+  const wanted = ids.slice(0, 50).map(function (id) { return String(id); });
+  const all = readOrders();
+
+  return all.filter(function (o) {
+    return wanted.indexOf(String(o.id)) !== -1;
+  });
+}
+
+/**
+ * 查全部订单。只给内部调试用，接口不会直接暴露它。
  */
 function listOrders() {
   return readOrders();
@@ -268,5 +299,7 @@ module.exports = {
   findProductById,
   createOrder,
   findOrderById,
+  listOrdersByUser,
+  listOrdersByIds,
   listOrders
 };
