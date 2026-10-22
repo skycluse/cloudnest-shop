@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="./css/components.css" />
   <link rel="stylesheet" href="./css/pages/orders.css" />
   <link rel="stylesheet" href="./css/pages/auth.css" />
+  <link rel="stylesheet" href="./css/pages/support.css" />
 </head>
 <body>
 
@@ -29,6 +30,11 @@
       </form>
 
       <nav class="header-actions">
+        <!-- 客服入口：点开是 AI 客服对话面板 -->
+        <button class="icon-btn support-trigger" id="supportTrigger" type="button" title="联系客服">
+          <span class="icon" data-icon="headset" data-icon-size="19"></span><span class="icon-label">客服</span>
+        </button>
+
         <a class="icon-btn" href="./index.html#products" title="全部商品">
           <span class="icon" data-icon="package" data-icon-size="19"></span><span class="icon-label">商品</span>
         </a>
@@ -235,6 +241,42 @@
     </div>
   </div>
 
+  <!-- ==================== AI 客服面板 ==================== -->
+  <div class="support-mask" id="supportMask" hidden></div>
+
+  <aside class="support-panel" id="supportPanel" aria-hidden="true">
+    <header class="support-head">
+      <div class="support-head-left">
+        <span class="support-avatar" data-icon="headset" data-icon-size="19"></span>
+        <div>
+          <h3 class="support-title">云巢客服</h3>
+          <p class="support-status">在线 · 订单信息来自你的真实订单</p>
+        </div>
+      </div>
+      <button class="drawer-close support-close" id="supportClose" type="button"
+              aria-label="关闭" data-icon="x" data-icon-size="17"></button>
+    </header>
+
+    <div class="support-body" id="supportBody">
+      <!-- 消息由 support.js 渲染 -->
+    </div>
+
+    <!-- 快捷问题 -->
+    <div class="support-chips" id="supportChips">
+      <button class="chip" type="button" data-question="我的订单到哪了">我的订单到哪了</button>
+      <button class="chip" type="button" data-question="怎么退货">怎么退货</button>
+      <button class="chip" type="button" data-question="运费怎么算">运费怎么算</button>
+      <button class="chip" type="button" data-question="保修多久">保修多久</button>
+    </div>
+
+    <form class="support-input-row" id="supportForm">
+      <input class="support-input" type="text" id="supportInput"
+             placeholder="描述你的问题，比如：我的订单到哪了" autocomplete="off" />
+      <button class="support-send" type="submit" id="supportSend" aria-label="发送"
+              data-icon="send" data-icon-size="17"></button>
+    </form>
+  </aside>
+
   <div class="toast-wrap" id="toastWrap"></div>
 
   <script src="./js/icons.js"></script>
@@ -244,6 +286,7 @@
   <script src="./js/auth.js"></script>
   <script src="./js/components.js"></script>
   <script src="./js/agent.js"></script>
+  <script src="./js/support.js"></script>
   <script src="./js/orders.js"></script>
 </body>
 </html>

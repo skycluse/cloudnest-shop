@@ -1,0 +1,299 @@
+/* ============================================================
+   pages/support.css —— AI 客服面板样式
+   ------------------------------------------------------------
+   和右下角「AI 购物助手」有意区分开：
+   · 购物助手：紫色渐变，浮在右下角，小窗
+   · 客服：      蓝色系，从右侧滑出，更高的面板
+
+   这样用户一眼能分清"我在跟谁说话"。
+   ============================================================ */
+
+/* ============================================================
+   1. 顶部导航的客服入口
+   ============================================================ */
+
+.support-trigger {
+  color: var(--color-text-sub);
+}
+
+/* 客服有一条轻微的高亮底线，让它比其它图标更显眼一点 */
+.support-trigger .icon {
+  position: relative;
+}
+
+.support-trigger:hover {
+  color: #0ea5e9;
+  background: rgba(14, 165, 233, 0.1);
+}
+
+/* 小绿点：表示"客服在线" */
+.support-trigger::after {
+  content: '';
+  position: absolute;
+  top: 8px;
+  right: 14px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-success);
+  box-shadow: 0 0 0 2px var(--color-bg);
+  pointer-events: none;
+}
+
+/* ============================================================
+   2. 遮罩
+   ============================================================ */
+
+.support-mask {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-mask);
+  background: rgba(17, 24, 39, 0.4);
+  backdrop-filter: blur(2px);
+  animation: fadeIn 0.2s ease;
+}
+
+/* ============================================================
+   3. 面板主体
+   ============================================================ */
+
+.support-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: var(--z-drawer);
+  display: flex;
+  flex-direction: column;
+  width: min(420px, 100vw);
+  height: 100dvh;
+  background: var(--color-bg);
+  box-shadow: var(--shadow-xl);
+  /* 默认在屏幕右侧外面，加 .is-open 才滑进来 */
+  transform: translateX(100%);
+  visibility: hidden;
+  transition: transform var(--transition-slow), visibility var(--transition-slow);
+}
+
+.support-panel.is-open {
+  transform: translateX(0);
+  visibility: visible;
+}
+
+/* ---------- 头部 ---------- */
+
+.support-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  /* 蓝色系，和购物助手的紫色区分开 */
+  background: linear-gradient(135deg, #0284c7, #0ea5e9);
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.support-head-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.support-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.22);
+  flex-shrink: 0;
+}
+
+.support-title {
+  font-size: var(--fs-base);
+  font-weight: 700;
+}
+
+.support-status {
+  font-size: 11px;
+  opacity: 0.9;
+}
+
+.support-close {
+  color: #fff;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.support-close:hover {
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+}
+
+/* ---------- 消息区 ---------- */
+
+.support-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  background: var(--color-bg-soft);
+}
+
+/* 客服消息里的快捷追问按钮 */
+.support-quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.support-quick .chip {
+  padding: 4px var(--space-3);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-full);
+  background: var(--color-bg);
+  font-size: var(--fs-xs);
+  color: var(--color-text-sub);
+  transition: all var(--transition-fast);
+}
+
+.support-quick .chip:hover {
+  border-color: #0ea5e9;
+  color: #0284c7;
+  background: rgba(14, 165, 233, 0.08);
+}
+
+/* ---------- 快捷问题条 ---------- */
+
+.support-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4) 0;
+  background: var(--color-bg);
+  flex-shrink: 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.support-chips .chip {
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-full);
+  background: var(--color-bg);
+  font-size: var(--fs-xs);
+  color: var(--color-text-sub);
+  transition: all var(--transition-fast);
+}
+
+.support-chips .chip:hover {
+  border-color: #0ea5e9;
+  color: #0284c7;
+  background: rgba(14, 165, 233, 0.08);
+}
+
+/* ---------- 输入区 ---------- */
+
+.support-input-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4) var(--space-4);
+  background: var(--color-bg);
+  flex-shrink: 0;
+}
+
+.support-input {
+  flex: 1 1 auto;
+  height: 42px;
+  padding: 0 var(--space-4);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-full);
+  background: var(--color-bg-soft);
+  font-size: var(--fs-sm);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.support-input:focus {
+  outline: none;
+  background: var(--color-bg);
+  border-color: #0ea5e9;
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15);
+}
+
+.support-send {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-full);
+  background: #0284c7;
+  color: #fff;
+  flex-shrink: 0;
+  transition: background var(--transition-fast), transform var(--transition-fast);
+}
+
+.support-send:hover:not(:disabled) {
+  background: #0369a1;
+}
+
+.support-send:active:not(:disabled) {
+  transform: scale(0.92);
+}
+
+.support-send:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ============================================================
+   4. 响应式
+   ============================================================ */
+
+@media (max-width: 767px) {
+  /* 手机上从底部弹出，占 90% 高度 */
+  .support-panel {
+    top: auto;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 90dvh;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    transform: translateY(100%);
+  }
+
+  .support-panel.is-open {
+    transform: translateY(0);
+  }
+
+  /* 小屏上客服的绿点会压住图标，隐藏 */
+  .support-trigger::after {
+    display: none;
+  }
+
+  .support-head {
+    padding: var(--space-3) var(--space-4);
+  }
+}
+
+/* ============================================================
+   5. 客服面板打开时，让右下角的 AI 助手浮窗让位
+   ------------------------------------------------------------
+   两个浮层都在右侧，同时出现会互相遮挡：
+   客服面板占满右边，AI 助手的圆形按钮正好压在输入框上。
+
+   解法：客服面板打开时给 body 加一个类，
+   用 body.support-open 选择器把 AI 助手按钮藏起来。
+   关闭客服后它会自动回来。
+   ============================================================ */
+
+body.support-open .agent-fab {
+  display: none;
+}
