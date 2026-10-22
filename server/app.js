@@ -16,6 +16,7 @@ const express = require('express');
 const productsRouter = require('./routes/products');
 const ordersRouter = require('./routes/orders');
 const authRouter = require('./routes/auth');
+const auth = require('./auth');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -67,6 +68,12 @@ app.use(function (err, req, res, next) {
 
 /* ---------- 启动 ---------- */
 
+// 线上环境（SEED_DEMO_USER=1）首次启动时建一个演示账号。
+// 因为免费云平台的磁盘是临时的，重启后数据会清空，
+// 有这个机制才能保证在线 Demo 永远有账号可以登录。
+// 本地开发不设这个变量，所以不会凭空多出一个账号。
+auth.ensureDemoUser();
+
 app.listen(PORT, function () {
   console.log('');
   console.log('  云巢商城 CloudNest 已启动');
@@ -74,6 +81,12 @@ app.listen(PORT, function () {
   console.log('  商城首页:  http://localhost:' + PORT + '/');
   console.log('  商品接口:  http://localhost:' + PORT + '/api/products');
   console.log('  健康检查:  http://localhost:' + PORT + '/api/health');
+
+  // 部署到云平台时，PUBLIC_URL 由平台提供，方便直接点开
+  if (process.env.RENDER_EXTERNAL_URL) {
+    console.log('  线上地址:  ' + process.env.RENDER_EXTERNAL_URL);
+  }
+
   console.log('  ------------------------------------');
   console.log('  按 Ctrl + C 停止服务');
   console.log('');
