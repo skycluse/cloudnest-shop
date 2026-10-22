@@ -3,7 +3,7 @@
    ------------------------------------------------------------
    【这个文件的定位，你要先搞清楚】
 
-   考核第九节要求做一个"AI 购物助手 Agent"。Agent 的核心是：
+   AI 购物助手 Agent 的核心是：
       用户说话 → 模型理解 → 调用工具(Tool) → 拿到真实数据 → 回答
 
    这个文件目前实现的是**前端界面 + 本地规则引擎**版本：
@@ -33,7 +33,7 @@ var agentState = {
   // 上一轮识别出的需求，用于理解"便宜一点" = 在上一轮基础上加约束
   lastQuery: null,
 
-  // 待确认的写操作（加购/下单前必须用户同意 —— 考核 9.4 要求）
+  // 待确认的写操作（加购 / 下单前必须用户同意）
   pendingAction: null,
 
   // 是否正在请求中
@@ -57,7 +57,7 @@ var AGENT_QUICK_CHIPS = [
    ============================================================ */
 
 /**
- * 工具 1：搜索商品（只读，考核 9.2）
+ * 工具 1：搜索商品（只读）
  * @param {object} params { keyword, category, maxPrice, minPrice, sort, limit }
  *
  * 【踩过的坑】这里只认 limit，不认 pageSize。
@@ -87,7 +87,7 @@ async function toolGetProduct(productId) {
 }
 
 /**
- * 工具 3：查询购物车（只读，考核 9.4）
+ * 工具 3：查询购物车（只读）
  */
 function toolGetCart() {
   return {
@@ -204,7 +204,7 @@ function extractCategory(text) {
 function decideIntent(text) {
   var t = text.toLowerCase();
 
-  // ---- 超范围请求：礼貌拒答（考核 9.6 第 2 条）----
+  // ---- 超范围请求：礼貌拒答 ----
   //
   // 【为什么要用正则而不是简单关键词列表？】
   // 因为用户会写"帮我写个 python 函数"，中间有空格；
@@ -227,7 +227,7 @@ function decideIntent(text) {
     }
   }
 
-  // ---- 提示词注入攻击（考核 9.6 第 3 条）----
+  // ---- 提示词注入攻击 ----
   // 同样用正则以覆盖多种说法和空格
   var INJECTION_PATTERNS = [
     /忽略\s*(你)?\s*(之前|以上|前面|所有|全部)?\s*(的)?\s*(指令|设定|规则|提示)/,
@@ -274,18 +274,18 @@ function decideIntent(text) {
     return { type: 'create_order' };
   }
 
-  // ---- 组合购买（多约束求解，考核 9.5）----
+  // ---- 组合购买（多约束求解）----
   if ((t.indexOf('耳机') !== -1 && t.indexOf('键盘') !== -1) ||
       ((t.indexOf('预算') !== -1 || /\d+\s*元/.test(t)) && t.indexOf('和') !== -1 && t.indexOf('买') !== -1)) {
     return { type: 'combo_plan' };
   }
 
-  // ---- "便宜一点" 这类追问（考核 9.3 多轮上下文）----
+  // ---- "便宜一点" 这类追问（依赖多轮上下文）----
   if (t.indexOf('便宜') !== -1 || t.indexOf('贵') !== -1 || t.indexOf('低一点') !== -1) {
     return { type: 'refine_cheaper' };
   }
 
-  // ---- 需求模糊：追问澄清（考核 9.6 第 1 条）----
+  // ---- 需求模糊：追问澄清 ----
   if (/^(随便|都行|不知道|看看|随便看看|有什么好东西|推荐一下|有什么推荐)/.test(t) ||
       t.indexOf('随便看看') !== -1 || t.indexOf('有什么好东西') !== -1) {
     return { type: 'ambiguous' };
@@ -642,7 +642,7 @@ async function runIntent(need) {
         target = guessed.items[0];
       }
 
-      // [重要] 写操作必须先确认（考核 9.4 第 2 条）
+      // [重要] 写操作必须先确认，不允许静默执行
       agentState.pendingAction = {
         type: 'add_to_cart',
         productId: target.id,
@@ -726,7 +726,7 @@ async function executePendingAction(steps) {
     var added = await toolAddToCart(action.productId, action.quantity);
     steps[steps.length - 1].result = '已加入购物车';
 
-    // 前端购物车实时同步（考核 9.4 第 3 条）
+    // 前端购物车实时同步
     components.openCartDrawer();
 
     return {
@@ -762,7 +762,7 @@ async function executePendingAction(steps) {
 }
 
 /* ============================================================
-   五、组合购买规划（考核 9.5 多步规划 + 约束求解）
+   五、组合购买规划（多步规划 + 约束求解）
    ------------------------------------------------------------
    场景："我有 1000 元预算，想买一副耳机和一把键盘，
           最好是同一品牌，帮我看看怎么买最划算"
@@ -993,7 +993,7 @@ function extractSearchKeyword(text) {
 }
 
 /**
- * 生成"推荐商品"的回复文案（带理由 —— 考核 9.5 第 3 条）
+ * 生成"推荐商品"的回复文案（带推荐理由）
  */
 function buildRecommendText(need, result, totalMatched) {
   var lines = [];
@@ -1107,7 +1107,7 @@ function appendMessage(role, text, products, steps) {
      只是不再显示。这样做的好处：
      1. 想恢复这个功能，只要把下面的渲染代码加回来
      2. 调试时可以在 Console 里看 window.agent.state 追踪工具调用
-     3. 以后接真模型做「可观测性」（考核 9.8 的 Trace 要求）时，
+     3. 以后接真模型做「可观测性」（记录完整调用链路）时，
         这批数据是现成的
   */
 
