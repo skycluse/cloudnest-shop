@@ -67,7 +67,7 @@ app.use(function (err, req, res, next) {
 
 app.listen(PORT, function () {
   console.log('');
-  console.log('  🪺 云巢商城 CloudNest 已启动');
+  console.log('  云巢商城 CloudNest 已启动');
   console.log('  ------------------------------------');
   console.log('  商城首页:  http://localhost:' + PORT + '/');
   console.log('  商品接口:  http://localhost:' + PORT + '/api/products');
