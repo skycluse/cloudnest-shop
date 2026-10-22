@@ -675,12 +675,26 @@ async function runIntent(need) {
         target = guessed.items[0];
       }
 
+      /* 【关键：判断用户是不是想"一步买到手"】
+       *
+       * "帮我把刚才推荐的那款买了" —— 用户的意图是买到底，
+       * 不只是加购物车。所以这里记下 chainOrder 标记，
+       * 加购成功后会主动问"要不要直接下单"。
+       *
+       * 但【下单仍然要单独确认】，
+       * 不能因为他说了"买了"就跳过确认直接扣钱 ——
+       * 这是 9.4 明确要求的"写操作必须确认，不允许静默执行"。
+       */
+      var wantsOrder = /买|下单|结账|付款/.test(need.rawText || '') &&
+                       !/加购|加入购物车|放(到|进|入)?购物车/.test(need.rawText || '');
+
       // [重要] 写操作必须先确认，不允许静默执行
       agentState.pendingAction = {
         type: 'add_to_cart',
         productId: target.id,
         productName: target.name,
-        quantity: 1
+        quantity: 1,
+        chainOrder: wantsOrder
       };
 
       return {
@@ -759,14 +773,18 @@ async function executePendingAction(steps) {
     var added = await toolAddToCart(action.productId, action.quantity);
     steps[steps.length - 1].result = '已加入购物车';
 
-    // 前端购物车实时同步
+    // 前端购物车实时同步（考核 9.4 第 3 条：状态要跟着变）
     components.openCartDrawer();
 
+    /* 用户原话是"买了"时，顺着往下引导下单。
+       注意只是"问"，不直接执行 —— 下单必须单独确认。 */
     return {
       text: '已经帮你加进购物车了\n\n' +
             '· ' + added.product.name + ' × ' + added.quantity +
             '（¥' + utils.formatPrice(added.product.price * added.quantity) + '）\n\n' +
-            '购物车右侧已经打开了，你可以直接去结算，或者让我帮你下单。',
+            (action.chainOrder
+              ? '要接着帮你下单吗？回复"下单"或者"帮我下单"。'
+              : '购物车右侧已经打开了，你可以直接去结算，或者让我帮你下单。'),
       steps: steps
     };
   }

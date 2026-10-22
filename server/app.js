@@ -16,6 +16,7 @@ const express = require('express');
 const productsRouter = require('./routes/products');
 const ordersRouter = require('./routes/orders');
 const authRouter = require('./routes/auth');
+const supportRouter = require('./routes/support');
 const auth = require('./auth');
 
 const app = express();
@@ -42,6 +43,7 @@ app.use(function (req, res, next) {
 app.use('/api', productsRouter);
 app.use('/api', authRouter);
 app.use('/api', ordersRouter);
+app.use('/api', supportRouter);
 
 // 健康检查：用来确认服务活着
 app.get('/api/health', function (req, res) {

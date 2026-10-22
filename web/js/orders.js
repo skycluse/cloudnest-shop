@@ -358,6 +358,13 @@ async function initOrdersPage() {
     window.agent.init();
   }
 
+  /* 初始化 AI 客服（顶部入口）。
+     必须放在 agent.init() 之后，因为它要用 agent.tools 里的工具函数
+     （搜索商品、加购物车），那些是在 agent.js 加载时就绪的。 */
+  if (window.support && typeof window.support.init === 'function') {
+    window.support.init();
+  }
+
   /* ---- 搜索框：跳到首页搜索 ---- */
   var searchForm = utils.$('#searchForm');
   if (searchForm) {
