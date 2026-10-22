@@ -216,11 +216,14 @@ cloudnest-shop/
 │   └── assets/products/        # 24 张商品照片
 │
 ├── tools/                      # 开发时用的小脚本
-│   ├── download_images.py      # 下载商品图
-│   ├── fix_order_images.py     # 修正订单里的图片路径
 │   ├── test-agent-logic.js     # AI 逻辑测试
 │   ├── test-pages.js           # 接口和页面结构测试
-│   └── test-runtime.js         # 前端运行时测试
+│   ├── test-runtime.js         # 前端运行时测试
+│   ├── check-overflow.js       # 检查各视口下有没有横向溢出
+│   ├── download_images.py      # 下载商品图
+│   ├── make_contact_sheet.py   # 把商品图拼成一张图，方便肉眼检查
+│   ├── fix_order_images.py     # 修正订单里失效的图片路径
+│   └── trace-refine.js         # 打印 AI 多轮对话的内部状态（排查用）
 │
 ├── docs/screenshots/           # 截图
 ├── package.json
