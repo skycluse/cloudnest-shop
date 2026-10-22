@@ -88,12 +88,29 @@ function initSupport() {
     mask.addEventListener('click', closeSupport);
   }
 
-  // 快捷问题
-  var chips = utils.$('#supportChips');
-  if (chips) {
-    chips.addEventListener('click', function (event) {
+  /* ---------- 快捷问题（两处）----------
+     ------------------------------------------------------------
+     面板里有两处快捷问题：
+     1. 底部固定的一条（#supportChips）
+     2. 每条回复下方动态生成的追问（#supportBody 里的 .support-quick）
+
+     【踩过的坑】最初事件只绑在 #supportChips 上，
+     结果消息下方的追问按钮点了没反应 —— 因为它们在 #supportBody 里，
+     根本没在监听范围内。
+
+     现在改成绑在整个面板上，#supportChips 和 #supportBody 里
+     所有 [data-question] 都能被捕获。
+     这样以后再加别处的快捷问题也不用改代码。
+  */
+  var panel = utils.$('#supportPanel');
+  if (panel) {
+    panel.addEventListener('click', function (event) {
       var chip = event.target.closest('[data-question]');
       if (!chip) return;
+
+      // 处理中就别让重复点击排队，避免连点刷出一堆回复
+      if (supportState.isBusy) return;
+
       handleSupportMessage(chip.getAttribute('data-question'));
     });
   }
