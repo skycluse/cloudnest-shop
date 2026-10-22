@@ -1,0 +1,237 @@
+/* ============================================================
+   pages/auth.css —— 登录 / 用户菜单相关样式
+   ------------------------------------------------------------
+   单独放一个文件，不塞进 components.css，
+   因为这块是一个独立功能，以后想换掉或者删掉，
+   直接把这个文件移除就行，不会牵连别的样式。
+   ============================================================ */
+
+/* ============================================================
+   1. 导航栏的登录区
+   ============================================================ */
+
+.auth-area {
+  display: flex;
+  align-items: center;
+}
+
+.auth-trigger {
+  color: var(--color-text-sub);
+}
+
+/* ============================================================
+   2. 用户菜单（头像 + 下拉）
+   ============================================================ */
+
+.user-menu {
+  position: relative;      /* 给下拉框定位 */
+}
+
+.user-trigger {
+  color: var(--color-text);
+}
+
+/* 头像：用昵称首字母做，比放一张默认图片简单，也更有辨识度 */
+.user-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-full);
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.user-avatar-lg {
+  width: 40px;
+  height: 40px;
+  font-size: 17px;
+}
+
+/* 下拉菜单 */
+.user-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: var(--z-header);
+  width: 240px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  animation: dropdownIn 0.18s ease;
+}
+
+@keyframes dropdownIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.user-dropdown-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.user-dropdown-info {
+  min-width: 0;
+}
+
+.user-dropdown-name {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--color-text);
+  /* 昵称太长就省略，避免把菜单撑开 */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-dropdown-id {
+  font-size: var(--fs-xs);
+  color: var(--color-text-light);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-dropdown-body {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.user-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--fs-xs);
+  gap: var(--space-2);
+}
+
+.user-meta-label {
+  color: var(--color-text-light);
+}
+
+.user-meta-value {
+  color: var(--color-text-sub);
+  font-variant-numeric: tabular-nums;
+}
+
+.user-dropdown-foot {
+  padding: var(--space-2);
+}
+
+/* 菜单项 */
+.user-menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-sm);
+  color: var(--color-text);
+  text-align: left;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.user-menu-item:hover {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+.user-menu-item.is-danger:hover {
+  background: rgba(225, 29, 72, 0.08);
+  color: var(--color-danger);
+}
+
+/* ============================================================
+   3. 登录 / 注册弹窗
+   ============================================================ */
+
+.modal-auth {
+  max-width: 420px;
+}
+
+.modal-head .auth-desc {
+  margin-top: var(--space-1);
+  font-size: var(--fs-xs);
+  color: var(--color-text-sub);
+}
+
+/* 表单下方的说明文字 */
+.auth-hint {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-mute);
+  font-size: var(--fs-xs);
+  color: var(--color-text-sub);
+  line-height: 1.6;
+}
+
+/* 底部：左边"去注册"，右边"登录"按钮 */
+.modal-foot-auth {
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.auth-switch {
+  font-size: var(--fs-xs);
+  color: var(--color-text-sub);
+}
+
+.auth-switch-btn {
+  color: var(--color-primary);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  padding: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.auth-switch-btn:hover {
+  opacity: 0.75;
+  text-decoration: underline;
+}
+
+/* ============================================================
+   4. 响应式
+   ============================================================ */
+
+@media (max-width: 767px) {
+  /* 手机上用户名可能很长，限制宽度避免把导航栏挤爆 */
+  .user-trigger .icon-label {
+    max-width: 48px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .user-dropdown {
+    width: 220px;
+    right: -8px;
+  }
+
+  /* 手机上底部按钮换行：切换链接在上，主按钮占满一行 */
+  .modal-foot-auth {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .auth-switch {
+    text-align: center;
+    padding-top: var(--space-2);
+  }
+
+  .modal-foot-auth .btn {
+    width: 100%;
+  }
+}

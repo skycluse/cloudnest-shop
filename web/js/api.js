@@ -42,6 +42,19 @@ async function request(path, options) {
     config.headers['Content-Type'] = 'application/json';
   }
 
+  /* ---- 带上登录凭证 ----
+     登录成功后我们把 token 存在 localStorage，
+     之后每个请求都自动放进请求头，后端靠它判断"你是谁"。
+
+     为什么每次请求都要带？
+     因为 HTTP 本身是"无状态"的 —— 服务端不会记得上一个请求是谁发的。
+     所以要么每次带上凭证，要么用 cookie（浏览器自动带）。
+     这里用请求头的方式，逻辑更直白，也方便调试。 */
+  var token = getStoredToken();
+  if (token && !config.headers['Authorization']) {
+    config.headers['Authorization'] = 'Bearer ' + token;
+  }
+
   var response;
   try {
     response = await fetch(API_BASE + path, config);
@@ -67,6 +80,35 @@ async function request(path, options) {
   }
 
   return result.data;
+}
+
+/* ============================================================
+   登录凭证的存取
+   ------------------------------------------------------------
+   存在 localStorage 里，刷新页面还在，关掉浏览器再打开也还在，
+   直到用户主动退出、或者 token 过期（后端设了 7 天）。
+   ============================================================ */
+
+var TOKEN_KEY = 'cloudnest_token';
+
+function getStoredToken() {
+  try {
+    return localStorage.getItem(TOKEN_KEY) || '';
+  } catch (err) {
+    return '';
+  }
+}
+
+function setStoredToken(token) {
+  try {
+    if (token) {
+      localStorage.setItem(TOKEN_KEY, token);
+    } else {
+      localStorage.removeItem(TOKEN_KEY);
+    }
+  } catch (err) {
+    console.warn('保存登录状态失败：', err);
+  }
 }
 
 /* ============================================================
@@ -120,9 +162,52 @@ function getOrder(id) {
 
 /**
  * 查订单列表
+ * @param {object} params 可选。未登录时传 { ids: '订单号1,订单号2' } 查本机订单
  */
-function getOrders() {
-  return request('/orders');
+function getOrders(params) {
+  var query = params && params.ids
+    ? '?ids=' + encodeURIComponent(params.ids)
+    : '';
+  return request('/orders' + query);
+}
+
+/* ============================================================
+   用户相关
+   ============================================================ */
+
+/**
+ * 注册。成功后会顺便登录（后端直接返回 token）。
+ * @param {object} payload { username, password, nickname }
+ * @returns {Promise<{token, user}>}
+ */
+function register(payload) {
+  return request('/auth/register', { method: 'POST', body: payload });
+}
+
+/**
+ * 登录
+ * @param {object} payload { username, password }
+ * @returns {Promise<{token, user}>}
+ */
+function login(payload) {
+  return request('/auth/login', { method: 'POST', body: payload });
+}
+
+/**
+ * 退出登录。后端会把 token 作废。
+ */
+function logout() {
+  return request('/auth/logout', { method: 'POST' });
+}
+
+/**
+ * 获取当前登录用户。
+ *
+ * 没登录时后端返回 401，这里会抛出错误。
+ * 调用处用 try/catch 包一下即可 —— 抛错是正常情况，不是 bug。
+ */
+function getMe() {
+  return request('/auth/me');
 }
 
 /* ============================================================
@@ -159,10 +244,20 @@ function buildQueryString(params) {
 // 挂到 window 上，其它 js 文件就能用了
 window.api = {
   request: request,
+  // 商品
   getProducts: getProducts,
   getProduct: getProduct,
   getCategories: getCategories,
+  // 订单
   createOrder: createOrder,
   getOrder: getOrder,
-  getOrders: getOrders
+  getOrders: getOrders,
+  // 用户
+  register: register,
+  login: login,
+  logout: logout,
+  getMe: getMe,
+  // 登录凭证（auth.js 会用到）
+  getToken: getStoredToken,
+  setToken: setStoredToken
 };

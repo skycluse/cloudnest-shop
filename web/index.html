@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="./css/layout.css" />
   <link rel="stylesheet" href="./css/components.css" />
   <link rel="stylesheet" href="./css/pages/home.css" />
+  <link rel="stylesheet" href="./css/pages/auth.css" />
 </head>
 <body>
 
@@ -56,6 +57,14 @@
           <!-- 角标：购物车里有几件商品 -->
           <span class="cart-badge" id="cartBadge" hidden>0</span>
         </button>
+
+        <!-- 登录 / 用户菜单：内容由 auth.js 动态渲染 -->
+        <div class="auth-area" id="authArea">
+          <button class="icon-btn auth-trigger" type="button" title="登录 / 注册">
+            <span class="icon" data-icon="user" data-icon-size="19"></span>
+            <span class="icon-label">登录</span>
+          </button>
+        </div>
       </nav>
     </div>
   </header>
@@ -303,6 +312,54 @@
     </form>
   </section>
 
+  <!-- ==================== 登录 / 注册弹窗 ==================== -->
+  <div class="modal-mask" id="authMask" hidden>
+    <div class="modal modal-auth" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+      <header class="modal-head">
+        <div>
+          <h3 class="modal-title" id="authTitle">登录</h3>
+          <p class="auth-desc" id="authDesc">登录后可以查看「我的订单」</p>
+        </div>
+        <button class="drawer-close" id="authClose" type="button" aria-label="关闭"
+                data-icon="x" data-icon-size="17"></button>
+      </header>
+
+      <form class="modal-body" id="authForm" novalidate>
+        <div class="form-row">
+          <label class="form-label" for="authUsername">用户名</label>
+          <input class="form-input" type="text" id="authUsername"
+                 placeholder="3~20 位字母、数字或下划线" autocomplete="username" />
+        </div>
+
+        <div class="form-row">
+          <label class="form-label" for="authPassword">密码</label>
+          <input class="form-input" type="password" id="authPassword"
+                 placeholder="至少 6 位" autocomplete="current-password" />
+        </div>
+
+        <div class="form-row" id="authNicknameRow" hidden>
+          <label class="form-label" for="authNickname">昵称</label>
+          <input class="form-input" type="text" id="authNickname"
+                 placeholder="选填，不填就用用户名" autocomplete="nickname" />
+        </div>
+
+        <p class="form-error form-error-global" id="authError"></p>
+
+        <p class="auth-hint">
+          这是演示项目，请勿使用你在其它网站的真实密码。
+        </p>
+      </form>
+
+      <footer class="modal-foot modal-foot-auth">
+        <div class="auth-switch">
+          <span id="authSwitchText">还没有账号？</span>
+          <button class="auth-switch-btn" id="authSwitchBtn" type="button">免费注册</button>
+        </div>
+        <button class="btn btn-primary" id="authSubmit" type="button">登录</button>
+      </footer>
+    </div>
+  </div>
+
   <!-- ==================== 全局提示 Toast ==================== -->
   <div class="toast-wrap" id="toastWrap"></div>
 
@@ -312,6 +369,7 @@
   <script src="./js/api.js"></script>
   <script src="./js/utils.js"></script>
   <script src="./js/cart.js"></script>
+  <script src="./js/auth.js"></script>
   <script src="./js/components.js"></script>
   <script src="./js/agent.js"></script>
   <script src="./js/home.js"></script>

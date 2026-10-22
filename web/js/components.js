@@ -9,6 +9,56 @@
    ============================================================ */
 
 /* ============================================================
+   零、本机订单号的记录
+   ------------------------------------------------------------
+   未登录的用户也能下单，但订单不属于任何账号。
+   为了让他在订单页还能看到自己下过的单，
+   下单时把订单号记到浏览器本地，之后按这些单号去后端查。
+
+   为什么放在这个文件而不是 orders.js？
+   因为首页和详情页也会下单，而 orders.js 只在订单页加载。
+   放在 components.js（三个页面都加载）才能保证记录不遗漏。
+   ============================================================ */
+
+var LOCAL_ORDERS_KEY = 'cloudnest_my_order_ids';
+
+/**
+ * 读出本机下过的订单号列表（最新的在前）
+ */
+function getLocalOrderIds() {
+  try {
+    var raw = localStorage.getItem(LOCAL_ORDERS_KEY);
+    var list = raw ? JSON.parse(raw) : [];
+    return Array.isArray(list) ? list : [];
+  } catch (err) {
+    return [];
+  }
+}
+
+/**
+ * 记下一个新订单号。
+ * 最多保留 50 条，避免 localStorage 无限增长。
+ */
+function rememberLocalOrderId(orderId) {
+  if (!orderId) return;
+
+  try {
+    var ids = getLocalOrderIds();
+
+    // 已经记过就不重复加，免得订单页出现重复卡片
+    var index = ids.indexOf(orderId);
+    if (index !== -1) {
+      ids.splice(index, 1);
+    }
+    ids.unshift(orderId);
+
+    localStorage.setItem(LOCAL_ORDERS_KEY, JSON.stringify(ids.slice(0, 50)));
+  } catch (err) {
+    console.warn('记录本机订单号失败：', err);
+  }
+}
+
+/* ============================================================
    一、商品卡片
    ============================================================ */
 
@@ -458,6 +508,13 @@ async function submitOrder() {
 
     // ---- 3. 成功 ----
     cart.clear();                 // 清空购物车
+
+    /* 在本地记下这个订单号。
+       未登录时订单不属于任何账号，订单页就是靠这份记录
+       查回"这个浏览器下过的单"。
+       登录用户也用得上（万一以后退出登录了还能看到）。 */
+    rememberLocalOrderId(order.id);
+
     closeCheckout();
     closeCartDrawer();
     showOrderResult(order);
@@ -759,10 +816,15 @@ async function addProductToCartById(productId, btn) {
 
 // 挂到 window
 window.components = {
+  // 本机订单号
+  getLocalOrderIds: getLocalOrderIds,
+  rememberLocalOrderId: rememberLocalOrderId,
+  // 卡片与列表
   productCardHtml: productCardHtml,
   renderProductGrid: renderProductGrid,
   renderCategoryGrid: renderCategoryGrid,
   getCategoryName: getCategoryName,
+  // 购物车与结算
   openCartDrawer: openCartDrawer,
   closeCartDrawer: closeCartDrawer,
   renderCartDrawer: renderCartDrawer,

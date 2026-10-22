@@ -393,6 +393,14 @@ async function initHomePage() {
   cart.init();
   components.initGlobalComponents();
 
+  /* 确认登录状态。
+     会先问后端"我这个 token 对应谁"，
+     然后渲染导航栏右上角的登录按钮 / 用户菜单。
+     注意用了 await —— 后面的逻辑可能需要知道"是否已登录"。 */
+  if (window.auth && typeof window.auth.init === 'function') {
+    await window.auth.init();
+  }
+
   // 1.5 初始化 AI 购物助手（浮窗按钮、输入框、快捷问题）
   if (window.agent && typeof window.agent.init === 'function') {
     window.agent.init();
