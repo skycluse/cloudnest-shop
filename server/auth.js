@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 用户与会话（登录状态）管理
  * ------------------------------------------------------------
  * 这个文件只负责一件事：用户数据怎么存、怎么验证、怎么记住"谁登录了"。
@@ -352,7 +352,60 @@ function getUserByToken(token) {
 }
 
 /* ============================================================
-   八、导出
+   八、首次启动时创建演示账号
+   ------------------------------------------------------------
+   【为什么需要这个？】
+
+   这个项目部署在 Render 免费版上，它的磁盘是临时的：
+   每次重新部署或服务重新启动，server/data/ 下的文件都会被清空。
+   也就是说用户注册的账号会消失，登录状态也会失效。
+
+   为了让人打开在线 Demo 时永远有一个能用的账号，
+   这里在"一个用户都没有"的情况下自动建一个演示账号。
+
+   【什么时候会执行？】
+   只有设置了环境变量 SEED_DEMO_USER=1 才会执行。
+   render.yaml 里给线上环境设了这个变量；
+   本地开发不设，所以本地不会有这个"莫名其妙的账号"。
+
+   【安全性说明】
+   自动创建一个密码公开的账号本身是不安全的做法。
+   这里这么做是因为：它是一个公开的演示站点，没有任何真实数据，
+   而且只在数据库为空时执行一次，不会覆盖已有账号。
+   如果这是真实业务系统，绝对不能这样。
+   ============================================================ */
+
+const DEMO_USERNAME = process.env.DEMO_USERNAME || 'demo';
+const DEMO_PASSWORD = process.env.DEMO_PASSWORD || 'demo123456';
+
+function ensureDemoUser() {
+  if (process.env.SEED_DEMO_USER !== '1') {
+    return { created: false, reason: '未开启（需要 SEED_DEMO_USER=1）' };
+  }
+
+  const db = readDb();
+
+  // 已经有用户了就不动，绝不覆盖真实注册的账号
+  if (db.users.length > 0) {
+    return { created: false, reason: '已有 ' + db.users.length + ' 个用户，跳过' };
+  }
+
+  const result = registerUser({
+    username: DEMO_USERNAME,
+    password: DEMO_PASSWORD,
+    nickname: '演示账号'
+  });
+
+  if (result.ok) {
+    console.log('[初始化] 已创建演示账号：' + DEMO_USERNAME + ' / ' + DEMO_PASSWORD);
+    return { created: true, username: DEMO_USERNAME };
+  }
+
+  return { created: false, reason: result.message };
+}
+
+/* ============================================================
+   九、导出
    ============================================================ */
 
 module.exports = {
@@ -362,5 +415,6 @@ module.exports = {
   getUserByToken,
   getTokenFromRequest,
   getUserFromRequest,
-  publicUser
+  publicUser,
+  ensureDemoUser
 };

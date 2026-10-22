@@ -1,0 +1,44 @@
+# ============================================================
+# render.yaml —— Render 平台的一键部署配置
+# ------------------------------------------------------------
+# 有了这个文件，部署时 Render 会自动读取这些设置，
+# 不用在网页上一个一个填。
+#
+# 用法（两条路，任选）：
+#
+#   方式 A：用 Blueprint（更省事）
+#     Render 后台 → New → Blueprint → 选这个仓库 → Apply
+#
+#   方式 B：手动建 Web Service
+#     New → Web Service → 选仓库 → Render 会自动识别 Node 项目
+#     Build Command: npm install
+#     Start Command: npm start
+#
+# 详细步骤见 README 的「部署到线上」章节。
+# ============================================================
+
+services:
+  - type: web
+    name: cloudnest-shop
+    runtime: node
+    plan: free
+    region: singapore        # 离国内近一点，访问快些
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      # 首次启动时自动创建演示账号 demo / demo123456。
+      # 因为免费版磁盘是临时的，重启后数据会清空，
+      # 有这个机制才能保证随时都能登录进去看看。
+      - key: SEED_DEMO_USER
+        value: "1"
+
+      # 演示账号的用户名和密码，想改就改这里
+      - key: DEMO_USERNAME
+        value: demo
+      - key: DEMO_PASSWORD
+        value: demo123456
+
+      # Node 版本
+      - key: NODE_VERSION
+        value: "22"
