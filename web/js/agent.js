@@ -36,6 +36,10 @@ var agentState = {
   // 待确认的写操作（加购 / 下单前必须用户同意）
   pendingAction: null,
 
+  // 本轮的工具调用链路（可观测性）：[{ name, params, result, at }]
+  // 每轮对话开始时清空，方便排查"这一轮到底调了什么、传了什么、返回了什么"
+  trace: [],
+
   // 是否正在请求中
   isBusy: false
 };
@@ -135,6 +139,7 @@ function clearAgentSession() {
   agentState.lastRecommended = [];
   agentState.lastQuery = null;
   agentState.pendingAction = null;
+  agentState.trace = [];
 
   try {
     localStorage.removeItem(AGENT_STORAGE_KEY);
@@ -167,6 +172,30 @@ function showAgentWelcome() {
    ============================================================ */
 
 /**
+ * 记录一次工具调用（可观测性 / 调试 / 效果评估都用得上）
+ *
+ * 考核 9.8 要求能给出「用户输入 → 选了哪个工具 → 入参 → 返回 → 最终回复」
+ * 的完整链路。这里把前四段记下来，后半段在 eval 脚本里和回复拼在一起。
+ *
+ * @param {string} name 工具名
+ * @param {object} params 入参
+ * @param {object} result 返回结果（只存摘要，避免把整个商品列表存下来）
+ */
+function logToolCall(name, params, result) {
+  agentState.trace.push({
+    name: name,
+    params: params,
+    result: result,
+    at: Date.now()
+  });
+
+  // 防御：万一某轮死循环调工具，不要让数组无限涨
+  if (agentState.trace.length > 60) {
+    agentState.trace.shift();
+  }
+}
+
+/**
  * 工具 1：搜索商品（只读）
  * @param {object} params { keyword, category, maxPrice, minPrice, sort, limit }
  *
@@ -186,6 +215,11 @@ async function toolSearchProducts(params) {
     page: p.page || 1,
     pageSize: p.limit || p.pageSize || 6
   });
+
+  logToolCall('searchProducts',
+    { keyword: p.keyword || '', category: p.category || '', maxPrice: p.maxPrice, minPrice: p.minPrice },
+    { total: result.total, ids: result.items.map(function (it) { return it.id; }) });
+
   return result;
 }
 
@@ -193,18 +227,23 @@ async function toolSearchProducts(params) {
  * 工具 2：查询商品详情（只读）
  */
 async function toolGetProduct(productId) {
-  return await window.api.getProduct(productId);
+  var product = await window.api.getProduct(productId);
+  logToolCall('getProduct', { productId: productId },
+    { id: product.id, name: product.name, price: product.price, stock: product.stock });
+  return product;
 }
 
 /**
  * 工具 3：查询购物车（只读）
  */
 function toolGetCart() {
-  return {
+  var snapshot = {
     items: cart.getItems(),
     totalCount: cart.getTotalCount(),
     totalPrice: cart.getTotalPrice()
   };
+  logToolCall('getCart', {}, { totalCount: snapshot.totalCount, totalPrice: snapshot.totalPrice });
+  return snapshot;
 }
 
 /**
@@ -222,6 +261,8 @@ async function toolAddToCart(productId, quantity) {
   var product = await window.api.getProduct(productId);
   var result = cart.add(product, quantity || 1);
   if (!result.ok) throw new Error(result.message);
+  logToolCall('addToCart', { productId: productId, quantity: quantity || 1 },
+    { ok: true, name: product.name, price: product.price });
   return { ok: true, product: product, quantity: quantity || 1 };
 }
 
@@ -235,6 +276,7 @@ function toolUpdateCartItem(productId, quantity) {
 
   var result = cart.updateQuantity(productId, quantity);
   if (!result.ok) throw new Error(result.message);
+  logToolCall('updateCartItem', { productId: productId, quantity: quantity }, { ok: true });
   return { ok: true };
 }
 
@@ -248,6 +290,7 @@ function toolRemoveFromCart(productId) {
 
   var result = cart.remove(productId);
   if (!result.ok) throw new Error(result.message);
+  logToolCall('removeFromCart', { productId: productId }, { ok: true });
   return { ok: true };
 }
 
@@ -269,6 +312,7 @@ async function toolCreateOrder() {
     remark: '由 AI 购物助手创建'
   });
   cart.clear();
+  logToolCall('createOrder', {}, { orderId: order.id, totalPrice: order.totalPrice, status: order.status });
   return order;
 }
 
@@ -406,6 +450,15 @@ function decideIntent(text) {
   }
 
   // ---- 加购 ----
+  /* 说明：先识别"带序号 / 指代"的说法（买第二个、就买那个），
+     否则这些句子会被下面的规则漏成"搜索商品"。
+     例如"买第二个"里没有"帮我"，原来的条件匹配不上。 */
+  if (/(买|要|来|带走)/.test(t) &&
+      (/第\s*[一二三四五六七八九十\d]+\s*(个|款|件|台|只|副)/.test(t) ||
+       /(这个|这款|那个|那款|它|刚才那|刚才的)/.test(t))) {
+    return { type: 'add_to_cart' };
+  }
+
   if (t.indexOf('加购') !== -1 || t.indexOf('加入购物车') !== -1 ||
       (t.indexOf('买') !== -1 && t.indexOf('帮我') !== -1 && t.indexOf('耳机') === -1 && t.indexOf('键盘') === -1)) {
     return { type: 'add_to_cart' };
@@ -460,6 +513,162 @@ function understand(text) {
 }
 
 /* ============================================================
+   二·五、解析"用户到底想买哪一件"
+   ------------------------------------------------------------
+   考核 9.4 要求 Agent 能听懂这几种说法：
+     "买第二个" / "买两个" / "就买刚才那个" / "帮我把 云巢 AirPods Lite 加入购物车"
+
+   之前这里的实现是"永远取上一轮推荐的第一个"，
+   结果用户说"买第二个"却加购了第一个，用户点名某个商品也认不出来 ——
+   这是评估脚本（tools/eval-agent.js）的 C12 / C9 用例发现的问题。
+
+   现在按优先级解析：
+     ① 序号（第二个 / 第3款）
+     ② 指代（这个 / 那款 / 刚才的）
+     ③ 在刚推荐的列表里按商品名 / 型号匹配
+     ④ 把整句话里的商品名剥出来，去商品库搜
+     ⑤ 按品类 / 预算兜底；如果还是不唯一，就反问，不替用户决定
+   ============================================================ */
+
+var CN_NUM = { 一: 1, 二: 2, 两: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9, 十: 10 };
+
+/**
+ * 抽出"第几个"里的数字：第二个 → 2
+ */
+function extractOrdinal(text) {
+  var m = text.match(/第\s*([一二三四五六七八九十\d]+)\s*(个|款|件|台|只|副)/);
+  if (!m) return 0;
+  if (/^\d+$/.test(m[1])) return parseInt(m[1], 10);
+  return CN_NUM[m[1]] || 0;
+}
+
+/**
+ * 抽出数量："买两个" → 2
+ * 注意"第二个"里的"个"是序号不是数量，要排除
+ */
+function extractQuantity(text) {
+  var m = text.match(/([一二三四五六七八九十\d])\s*(个|件|台|只|副)/);
+  if (!m) return 1;
+
+  if (/第\s*[一二三四五六七八九十\d]\s*个/.test(text)) return 1;
+
+  var n = CN_NUM[m[1]] || 1;
+  return n >= 1 && n <= 10 ? n : 1;
+}
+
+/**
+ * 把一句话里的"动作词"去掉，只留下商品名（用来搜商品库）
+ * 例："帮我把云巢 AirPods Lite 加入购物车" → "云巢 AirPods Lite"
+ */
+function extractProductKeyword(text) {
+  var s = text;
+
+  var noise = [
+    '帮我', '请', '麻烦', '把', '将', '给我', '我要', '我想要', '想要', '买', '来',
+    '加入购物车', '加入', '放进购物车', '放到购物车', '购物车', '加购', '下单',
+    '直接', '就买', '这个', '这款', '那个', '那款', '刚才', '刚才的', '的', '吧', '了', '吗',
+    '一个', '一件', '一款', '一台', '一副'
+  ];
+  for (var i = 0; i < noise.length; i++) {
+    s = s.split(noise[i]).join('');
+  }
+
+  // 序号和数量也要去掉
+  s = s.replace(/第[一二三四五六七八九十\d]+\s*(个|款|件|台|只|副)/g, '');
+  s = s.replace(/[一二三四五六七八九十\d]+\s*(个|件|台|只|副)/g, '');
+
+  return s.trim();
+}
+
+/**
+ * 解析出要加购的商品
+ * @param {string} text 用户原话
+ * @param {object} need 理解出来的需求（含分类、预算）
+ * @returns {Promise<{product?, quantity?, message?}>}
+ */
+async function resolveAgentTarget(text, need) {
+  var rec = agentState.lastRecommended || [];
+  var quantity = extractQuantity(text);
+
+  /* ---- ① 序号 ---- */
+  var ordinal = extractOrdinal(text);
+  if (ordinal > 0) {
+    if (rec.length === 0) {
+      return { message: '我这边还没给你推荐过商品，你先让我找一下，比如"推荐 500 元以内的耳机"。' };
+    }
+    if (ordinal > rec.length) {
+      return {
+        message: '刚才我只推荐了 ' + rec.length + ' 个，第 ' + ordinal +
+                 ' 个超出范围了。你可以说"第一个"到"第' + rec.length + '个"。'
+      };
+    }
+    return { product: rec[ordinal - 1], quantity: quantity };
+  }
+
+  /* ---- ② 指代 ---- */
+  if (/这个|这款|那个|那款|它|刚才/.test(text) && rec.length > 0) {
+    return { product: rec[0], quantity: quantity };
+  }
+
+  /* ---- ③ 在刚才的推荐里按名字 / 型号匹配 ---- */
+  for (var i = 0; i < rec.length; i++) {
+    var name = rec[i].name;
+    var brand = rec[i].brand || '';
+    var model = name.replace(brand, '').split(' ')[0];
+
+    if (text.indexOf(name) !== -1 || (model.length >= 2 && text.indexOf(model) !== -1)) {
+      return { product: rec[i], quantity: quantity };
+    }
+  }
+
+  /* ---- ④ 从原话里剥出商品名，去商品库搜 ---- */
+  var keyword = extractProductKeyword(text);
+  if (keyword.length >= 2) {
+    var found = await toolSearchProducts({ keyword: keyword, limit: 5 });
+    if (found.items && found.items.length === 1) {
+      return { product: found.items[0], quantity: quantity };
+    }
+    if (found.items && found.items.length > 1) {
+      // 名称里直接包含关键词的优先（比标签命中的更准）
+      for (var j = 0; j < found.items.length; j++) {
+        if (found.items[j].name.indexOf(keyword) !== -1) {
+          return { product: found.items[j], quantity: quantity };
+        }
+      }
+      return {
+        message: '我找到几个相近的商品，你说的是哪一个？\n\n' +
+                 found.items.slice(0, 3).map(function (p, idx) {
+                   return (idx + 1) + '. ' + p.name + ' — ¥' + utils.formatPrice(p.price);
+                 }).join('\n') +
+                 '\n\n回复"第几个"或者直接说商品名都可以。',
+        products: found.items.slice(0, 3)
+      };
+    }
+  }
+
+  /* ---- ⑤ 按品类 / 预算兜底，不唯一就反问 ---- */
+  var params = { sort: 'rating', limit: 3 };
+  if (need && need.category) params.category = need.category;
+  if (need && need.budget) params.maxPrice = need.budget;
+
+  var guessed = await toolSearchProducts(params);
+  if (!guessed.items || guessed.items.length === 0) {
+    return { message: '我没找到符合条件的商品，可以说得具体一点吗？比如"帮我买 300 元以内的耳机"。' };
+  }
+  if (guessed.items.length > 1 && !(need && need.category)) {
+    return {
+      message: '你想买的是哪一件？可以说"第二个"，或者直接说商品名。\n\n' +
+               guessed.items.slice(0, 3).map(function (p, idx) {
+                 return (idx + 1) + '. ' + p.name + ' — ¥' + utils.formatPrice(p.price);
+               }).join('\n'),
+      products: guessed.items.slice(0, 3)
+    };
+  }
+
+  return { product: guessed.items[0], quantity: quantity };
+}
+
+/* ============================================================
    四、Agent 主循环：理解 → 调工具 → 回答
    ============================================================ */
 
@@ -476,6 +685,9 @@ async function handleUserMessage(text) {
   // 1. 先把用户消息显示出来，并记进历史
   appendMessage('user', trimmed);
   agentState.messages.push({ role: 'user', content: trimmed });
+
+  // 这一轮的工具调用记录从头开始记
+  agentState.trace = [];
 
   // 2. 显示"正在输入"
   var typingEl = appendTyping();
@@ -784,26 +996,28 @@ async function runIntent(need) {
 
     /* ---------- 加入购物车 ---------- */
     case 'add_to_cart': {
-      // 找出要加购的商品：优先用上一轮推荐的第一个
-      var target = null;
-
-      if (agentState.lastRecommended.length > 0) {
-        target = agentState.lastRecommended[0];
+      /* 未登录就先说清楚，不要让用户白确认一次。
+         写工具内部还会再拦一次（安全边界在后端和工具层，不靠这句话）。 */
+      if (!isAgentAllowedToWrite()) {
+        return {
+          text: '要加购物车得先登录哦。登录之后我才能帮你把商品放进购物车、下单。\n\n' +
+                '点右上角「登录 / 注册」登录一下，回来再跟我说一次就行。'
+        };
       }
 
-      if (!target) {
-        // 没推荐过就问清楚
-        var guessParams = { sort: 'price_asc', limit: 3 };
-        var cat = need.category;
-        if (cat) guessParams.category = cat;
-        if (need.budget) guessParams.maxPrice = need.budget;
+      var picked = await resolveAgentTarget(need.rawText || '', need);
 
-        var guessed = await toolSearchProducts(guessParams);
-        if (guessed.items.length === 0) {
-          return { text: '我没找到符合条件的商品，换个说法试试？' };
-        }
-        target = guessed.items[0];
+      // 解析不出唯一商品时，把候选列出来反问，不替用户挑
+      if (!picked.product) {
+        return {
+          text: picked.message,
+          products: picked.products,
+          steps: steps
+        };
       }
+
+      var target = picked.product;
+      var quantity = picked.quantity || 1;
 
       /* 【关键：判断用户是不是想"一步买到手"】
        *
@@ -823,12 +1037,14 @@ async function runIntent(need) {
         type: 'add_to_cart',
         productId: target.id,
         productName: target.name,
-        quantity: 1,
+        quantity: quantity,
         chainOrder: wantsOrder
       };
 
       return {
-        text: '好的，我准备把「' + target.name + '」（¥' + utils.formatPrice(target.price) + '）加入购物车。\n\n' +
+        text: '好的，我准备把「' + target.name + '」（¥' + utils.formatPrice(target.price) + '）' +
+              (quantity > 1 ? ' × ' + quantity + ' ' : '') +
+              '加入购物车。\n\n' +
               '确认要加购吗？回复"确认"即可。',
         products: [target],
         steps: steps
