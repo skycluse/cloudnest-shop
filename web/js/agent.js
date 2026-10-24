@@ -48,6 +48,116 @@ var AGENT_QUICK_CHIPS = [
   '帮我看看购物车里有什么'
 ];
 
+// 欢迎语（打开面板时如果说第一句话，也存进历史里）
+var AGENT_WELCOME =
+  '你好！我是云巢商城的 AI 购物助手。\n\n' +
+  '我可以帮你：\n' +
+  '· 按预算和需求找商品\n' +
+  '· 比较不同商品的差别\n' +
+  '· 帮你加购物车、下单（会先跟你确认）\n\n' +
+  '所有推荐都基于商城的真实商品数据，不会瞎编。\n' +
+  '试试问我："500 元以内的运动耳机有吗？"';
+
+/* ============================================================
+   一·五、会话持久化 + 上下文裁剪
+   ------------------------------------------------------------
+   考核 9.7 要求"对话历史在页面刷新或重新打开后不丢失"。
+   做法：每轮对话结束把状态写进 localStorage，下次打开再读回来。
+
+   顺带解决"上下文管理"：
+   - 只保留最近 AGENT_MAX_MESSAGES 条消息（超出从头裁掉），
+     避免聊得越久、要发给模型的内容越多（真接模型时会拖慢响应、浪费 token）
+   - lastRecommended / lastQuery 一起存，刷新之后说"便宜一点"
+     仍然能接着上一轮推荐继续筛，而不是断片
+   - pendingAction（等待用户确认的加购 / 下单）故意不存：
+     刷新页面等于这一轮操作作废，重新确认一次更安全
+   ============================================================ */
+
+var AGENT_STORAGE_KEY = 'cloudnest_agent_chat_v1';
+var AGENT_MAX_MESSAGES = 20;   // 最多保留 20 条（约 10 轮对话）
+
+/**
+ * 把当前对话写进 localStorage
+ */
+function saveAgentSession() {
+  try {
+    localStorage.setItem(AGENT_STORAGE_KEY, JSON.stringify({
+      // 裁剪：只留最近 20 条
+      messages: agentState.messages.slice(-AGENT_MAX_MESSAGES),
+      lastRecommended: agentState.lastRecommended,
+      lastQuery: agentState.lastQuery
+    }));
+  } catch (err) {
+    // 隐私模式下 localStorage 可能不可写，静默失败即可，不影响聊天
+    console.warn('对话记录保存失败：', err);
+  }
+}
+
+/**
+ * 从 localStorage 恢复对话
+ * @returns {boolean} 有没有恢复出内容
+ */
+function restoreAgentSession() {
+  try {
+    var raw = localStorage.getItem(AGENT_STORAGE_KEY);
+    if (!raw) return false;
+
+    var data = JSON.parse(raw);
+    if (!data || !Array.isArray(data.messages) || data.messages.length === 0) {
+      return false;
+    }
+
+    agentState.messages = data.messages.slice(-AGENT_MAX_MESSAGES);
+    agentState.lastRecommended = Array.isArray(data.lastRecommended) ? data.lastRecommended : [];
+    agentState.lastQuery = data.lastQuery || null;
+    return true;
+  } catch (err) {
+    console.warn('对话记录读取失败，已忽略：', err);
+    return false;
+  }
+}
+
+/**
+ * 把恢复出来的历史消息重新画到面板上
+ */
+function renderRestoredMessages() {
+  for (var i = 0; i < agentState.messages.length; i++) {
+    var m = agentState.messages[i];
+    appendMessage(m.role, m.content, m.products);
+  }
+}
+
+/**
+ * 清空对话：内存、界面、本地存储一起清
+ */
+function clearAgentSession() {
+  agentState.messages = [];
+  agentState.lastRecommended = [];
+  agentState.lastQuery = null;
+  agentState.pendingAction = null;
+
+  try {
+    localStorage.removeItem(AGENT_STORAGE_KEY);
+  } catch (err) {
+    console.warn('对话记录清除失败：', err);
+  }
+
+  var body = utils.$('#agentBody');
+  if (body) body.innerHTML = '';
+
+  showAgentWelcome();
+  utils.toast('对话已清空', 'success');
+}
+
+/**
+ * 显示欢迎语（只在没有历史消息时出现）
+ */
+function showAgentWelcome() {
+  appendMessage('assistant', AGENT_WELCOME);
+  agentState.messages.push({ role: 'assistant', content: AGENT_WELCOME });
+  saveAgentSession();
+}
+
 /* ============================================================
    二、工具（Tool）定义
    ------------------------------------------------------------
@@ -385,7 +495,12 @@ async function handleUserMessage(text) {
 
     if (reply && reply.text) {
       appendMessage('assistant', reply.text, reply.products, reply.steps);
-      agentState.messages.push({ role: 'assistant', content: reply.text });
+      // 商品卡片也一起记下来，刷新页面后才能连卡片一起还原
+      agentState.messages.push({
+        role: 'assistant',
+        content: reply.text,
+        products: reply.products || null
+      });
 
       // 记住这轮推荐，供下一轮"便宜一点"参考
       if (reply.products && reply.products.length > 0) {
@@ -401,7 +516,22 @@ async function handleUserMessage(text) {
     console.error('Agent 处理出错：', err);
     appendMessage('assistant', '抱歉，我这边出了点问题：' + err.message + '\n再试一次好吗？');
   } finally {
+    // 每轮结束都裁剪一次上下文并存盘（成功、失败都存，
+    // 保证刷新后看到的就是刚才看到的）
+    trimAgentMessages();
+    saveAgentSession();
     setBusy(false);
+  }
+}
+
+/**
+ * 上下文裁剪：只保留最近 AGENT_MAX_MESSAGES 条。
+ * 真接大模型时，这里就是"发给模型的历史消息"，
+ * 不裁剪的话聊得越久请求体越大，最后会超 token 上限。
+ */
+function trimAgentMessages() {
+  if (agentState.messages.length > AGENT_MAX_MESSAGES) {
+    agentState.messages = agentState.messages.slice(-AGENT_MAX_MESSAGES);
   }
 }
 
@@ -1271,17 +1401,7 @@ function openAgent() {
 
   // 首次打开时显示欢迎语
   if (agentState.messages.length === 0) {
-    appendMessage(
-      'assistant',
-      '你好！我是云巢商城的 AI 购物助手。\n\n' +
-      '我可以帮你：\n' +
-      '· 按预算和需求找商品\n' +
-      '· 比较不同商品的差别\n' +
-      '· 帮你加购物车、下单（会先跟你确认）\n\n' +
-      '所有推荐都基于商城的真实商品数据，不会瞎编。\n' +
-      '试试问我："500 元以内的运动耳机有吗？"'
-    );
-    agentState.messages.push({ role: 'assistant', content: '欢迎语' });
+    showAgentWelcome();
   }
 
   // 自动聚焦输入框
@@ -1316,11 +1436,19 @@ function toggleAgent() {
    ============================================================ */
 
 function initAgent() {
+  // 先把上一次的对话从本地存储恢复出来（刷新页面不丢历史）
+  if (restoreAgentSession()) {
+    renderRestoredMessages();
+  }
+
   var fab = utils.$('#agentFab');
   if (fab) fab.addEventListener('click', toggleAgent);
 
   var closeBtn = utils.$('#agentClose');
   if (closeBtn) closeBtn.addEventListener('click', closeAgent);
+
+  var clearBtn = utils.$('#agentClear');
+  if (clearBtn) clearBtn.addEventListener('click', clearAgentSession);
 
   // 快捷问题点击
   var chips = utils.$('#agentChips');
