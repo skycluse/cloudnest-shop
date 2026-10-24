@@ -742,6 +742,13 @@ function initGlobalComponents() {
 
   /* ---------- 订阅购物车变化 ---------- */
   cart.subscribe(renderCartDrawer);
+
+  /* 订阅只负责"变化时重新渲染"，不会立刻执行一次。
+     而页面第一次打开时，购物车抽屉和角标还是 HTML 里的占位内容
+     （抽屉里写着"购物车加载中…"、角标是隐藏的），
+     于是从 localStorage 恢复到购物车里的商品要等到用户改一次购物车才显示。
+     这里初始化时主动渲染一次，把"上次留下的购物车"立刻画出来。 */
+  renderCartDrawer();
 }
 
 /**
