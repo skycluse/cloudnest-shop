@@ -276,9 +276,24 @@ async function runCases(token) {
 
     await ask(p, '确认');
     const items = p.w.cart.getItems();
-    check('C12', '加进购物车的是第 2 件商品',
-      items.length === 1 && target && Number(items[0].productId) === target.id,
-      JSON.stringify(items.map((x) => x.productId)));
+
+    /* 注意：新版本里"买第二个"是一步下单（加购 + 下单），
+       确认之后购物车会被清空，商品存在于订单里。
+       所以这里两种结果都算对：要么还在购物车，要么已经进了订单。 */
+    const inCart = items.length === 1 && target && Number(items[0].productId) === target.id;
+
+    let inOrder = false;
+    if (!inCart) {
+      const res = await fetch(SERVER + '/api/orders', {
+        headers: { Authorization: 'Bearer ' + token }
+      }).then((x) => x.json());
+      const latest = (res.data || [])[0];
+      inOrder = !!latest && target &&
+        (latest.items || []).some((it) => Number(it.productId) === target.id);
+    }
+
+    check('C12', '加进购物车（或已下单）的是第 2 件商品', inCart || inOrder,
+      JSON.stringify({ cart: items.map((x) => x.productId), inOrder: inOrder }));
     results.push({ trace: { case: 'C12', input: ['推荐 500 元以内的耳机', '买第二个', '确认'], calls: r.trace, reply: r.text } });
     p.w.close();
   }

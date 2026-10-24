@@ -1129,30 +1129,61 @@ async function runIntent(need) {
       /* 【关键：判断用户是不是想"一步买到手"】
        *
        * "帮我把刚才推荐的那款买了" —— 用户的意图是买到底，
-       * 不只是加购物车。所以这里记下 chainOrder 标记，
-       * 加购成功后会主动问"要不要直接下单"。
+       * 不只是加购物车（考核 9.4 第 1 条的例子就是这么写的）。
        *
-       * 但【下单仍然要单独确认】，
-       * 不能因为他说了"买了"就跳过确认直接扣钱 ——
-       * 这是 9.4 明确要求的"写操作必须确认，不允许静默执行"。
+       * 以前的做法：先问"要加购吗"，加购完再问"要下单吗" —— 要 3 轮对话，
+       * 用户心里想的是一件事，却被拆成三次确认，很烦。
+       *
+       * 现在：把"加购 + 下单"当作【一个动作】来确认。
+       * 确认消息里写清楚"先加购、再下单、合计多少钱"，
+       * 用户点一次"确认"就两步都执行；
+       * 但依然是【确认之后才执行】—— 9.4 第 2 条的要求没有被绕开。
        */
       var wantsOrder = /买|下单|结账|付款/.test(need.rawText || '') &&
                        !/加购|加入购物车|放(到|进|入)?购物车/.test(need.rawText || '');
 
+      var unitTotal = Number(target.price) * quantity;
+
+      // 购物车里已有的东西也会一起结账，确认的时候要说清楚，别让用户意外
+      var cartSnapshot = toolGetCart();
+      var othersTotal = cartSnapshot.totalPrice || 0;
+
+      steps.push({
+        name: 'getCart',
+        args: '{}',
+        result: '购物车里现有 ' + cartSnapshot.items.length + ' 件，合计 ¥' + utils.formatPrice(othersTotal)
+      });
+
       // [重要] 写操作必须先确认，不允许静默执行
       agentState.pendingAction = {
-        type: 'add_to_cart',
+        type: wantsOrder ? 'buy_now' : 'add_to_cart',
         productId: target.id,
         productName: target.name,
         quantity: quantity,
-        chainOrder: wantsOrder
+        expectedTotal: unitTotal + othersTotal
       };
 
+      if (!wantsOrder) {
+        return {
+          text: '好的，我准备把「' + target.name + '」（¥' + utils.formatPrice(target.price) + '）' +
+                (quantity > 1 ? ' × ' + quantity + ' ' : '') +
+                '加入购物车。\n\n' +
+                '确认要加购吗？回复"确认"即可。',
+          products: [target],
+          steps: steps
+        };
+      }
+
       return {
-        text: '好的，我准备把「' + target.name + '」（¥' + utils.formatPrice(target.price) + '）' +
-              (quantity > 1 ? ' × ' + quantity + ' ' : '') +
-              '加入购物车。\n\n' +
-              '确认要加购吗？回复"确认"即可。',
+        text: '收到，你说的是要买下来。我会这样做：\n\n' +
+              '1. 把「' + target.name + '」' + (quantity > 1 ? ' × ' + quantity + ' ' : '') +
+              '加入购物车' + (quantity > 1 ? '，小计 ¥' + utils.formatPrice(unitTotal) : '') + '\n' +
+              '2. 用购物车里的全部商品下单' +
+              (othersTotal > 0
+                ? '（购物车里已有的 ' + cartSnapshot.items.length + ' 件也会一起结账）'
+                : '') + '\n' +
+              '3. 订单合计 ¥' + utils.formatPrice(unitTotal + othersTotal) + '，模拟支付\n\n' +
+              '确认下单吗？回复"确认"我就开始；回"取消"就只做加购。',
         products: [target],
         steps: steps
       };
@@ -1229,15 +1260,43 @@ async function executePendingAction(steps) {
     // 前端购物车实时同步（考核 9.4 第 3 条：状态要跟着变）
     components.openCartDrawer();
 
-    /* 用户原话是"买了"时，顺着往下引导下单。
-       注意只是"问"，不直接执行 —— 下单必须单独确认。 */
     return {
       text: '已经帮你加进购物车了\n\n' +
             '· ' + added.product.name + ' × ' + added.quantity +
             '（¥' + utils.formatPrice(added.product.price * added.quantity) + '）\n\n' +
-            (action.chainOrder
-              ? '要接着帮你下单吗？回复"下单"或者"帮我下单"。'
-              : '购物车右侧已经打开了，你可以直接去结算，或者让我帮你下单。'),
+            '购物车右侧已经打开了，你可以直接去结算，或者让我帮你下单。',
+      steps: steps
+    };
+  }
+
+  /* ---------- 加购 + 下单：一次确认，两步执行 ---------- */
+  if (action.type === 'buy_now') {
+    // 第 1 步：加购
+    steps.push({
+      name: 'addToCart',
+      args: JSON.stringify({ productId: action.productId, quantity: action.quantity }),
+      result: '执行中…'
+    });
+    var bought = await toolAddToCart(action.productId, action.quantity);
+    steps[steps.length - 1].result = '已加入购物车';
+
+    // 第 2 步：下单
+    steps.push({ name: 'createOrder', args: '{}', result: '执行中…' });
+    var boughtOrder = await toolCreateOrder();
+    steps[steps.length - 1].result = '订单号 ' + boughtOrder.id;
+
+    // 前端状态实时同步：购物车抽屉 + 订单结果弹窗
+    components.openCartDrawer();
+    components.showOrderResult(boughtOrder);
+
+    return {
+      text: '已经帮你买好了\n\n' +
+            '· 商品：' + bought.product.name + ' × ' + bought.quantity + '\n' +
+            '· 订单编号：' + boughtOrder.id + '\n' +
+            '· 商品件数：' + boughtOrder.itemCount + ' 件\n' +
+            '· 订单总价：¥' + utils.formatPrice(boughtOrder.totalPrice) + '\n' +
+            '· 订单状态：' + boughtOrder.statusText + '\n\n' +
+            '订单详情已经弹出来了，也可以在「我的订单」里查看。',
       steps: steps
     };
   }

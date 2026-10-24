@@ -142,14 +142,22 @@ async function main() {
     fail('确认信息里没说清是哪个商品', buyA.slice(0, 200));
   }
 
-  /* ---------- 要求 3：状态实时同步 ---------- */
-  console.log('\n[3] 工具调用后状态实时同步');
+  /* ---------- 要求 3：加购（不带"买了"）—— 只加购，不自动下单 ---------- */
+  console.log('\n[3] 加购类写操作：确认后加购，并且不自动下单');
 
+  const addOnlyA = await askA('帮我把刚才推荐的那款加入购物车');
+  if (addOnlyA.includes('确认')) {
+    ok('"加入购物车"先请求确认');
+  } else {
+    fail('加购前没有确认', addOnlyA.slice(0, 200));
+  }
+
+  const cartBeforeAdd = A.w.cart.getTotalCount();
   const okA = await askA('确认');
-  if (A.w.cart.getTotalCount() > 0) {
+  if (A.w.cart.getTotalCount() > cartBeforeAdd) {
     ok(`确认后购物车真的有了商品（${A.w.cart.getTotalCount()} 件）`);
   } else {
-    fail('确认后购物车没变化');
+    fail('确认后购物车没变化', okA.slice(0, 200));
   }
 
   // 购物车抽屉应该被自动打开
@@ -168,11 +176,11 @@ async function main() {
     fail('购物车角标没更新');
   }
 
-  // 加购后应该主动引导下一步
-  if (okA.includes('下单')) {
-    ok('加购完成后主动引导下单（多步推进）');
+  // 只是加购，不应该顺手产生订单
+  if (!/CN\d{8,}-\d+/.test(okA)) {
+    ok('只加购、没有静默下单');
   } else {
-    fail('加购后没有引导下一步', okA.slice(0, 200));
+    fail('只说了加购，却产生了订单', okA.slice(0, 200));
   }
 
   /* ---------- 要求 4：下单反馈订单号 ---------- */
@@ -180,7 +188,7 @@ async function main() {
 
   const preOrderA = await askA('帮我下单');
   if (preOrderA.includes('确认')) {
-    ok('下单前再次请求确认');
+    ok('下单前请求确认（列出购物车摘要）');
   } else {
     fail('下单前没有确认', preOrderA.slice(0, 200));
   }
@@ -217,6 +225,45 @@ async function main() {
     fail('下单回复里没有状态');
   }
 
+  /* ---------- 要求 5：说"买了"时，加购 + 下单一次确认走完 ---------- */
+  console.log('\n[5] 说"买了"：一次确认完成「加购 → 下单」');
+
+  await askA('推荐一个 500 元以内的机械键盘');
+  const buyNowReply = await askA('帮我把刚才推荐的那款买了');
+  if (buyNowReply.includes('确认') && buyNowReply.includes('下单')) {
+    ok('确认消息里说明了"先加购、再下单"');
+  } else {
+    fail('"买了"的确认消息没说清要做什么', buyNowReply.slice(0, 200));
+  }
+
+  const cartBeforeBuyNow = A.w.cart.getTotalCount();
+  const ordersBeforeBuyNow = (await fetch(SERVER + '/api/orders', {
+    headers: { 'Authorization': 'Bearer ' + regA.data.token }
+  }).then((r) => r.json())).data.length;
+
+  const buyNowDone = await askA('确认');
+  const buyNowNo = (buyNowDone.match(/CN\d{8,}-\d+/) || [])[0];
+  if (buyNowNo) {
+    ok('一次确认后直接生成了订单：' + buyNowNo);
+  } else {
+    fail('一次确认后没有生成订单', buyNowDone.slice(0, 300));
+  }
+
+  const ordersAfterBuyNow = (await fetch(SERVER + '/api/orders', {
+    headers: { 'Authorization': 'Bearer ' + regA.data.token }
+  }).then((r) => r.json())).data;
+  if (ordersAfterBuyNow.length === ordersBeforeBuyNow + 1) {
+    ok('后端真的多了一笔订单（不是编的）');
+  } else {
+    fail('后端订单数没变化', `${ordersBeforeBuyNow} -> ${ordersAfterBuyNow.length}`);
+  }
+
+  if (A.w.cart.getTotalCount() === 0) {
+    ok('下单后购物车被清空');
+  } else {
+    fail('下单后购物车没清空', '仍有 ' + A.w.cart.getTotalCount() + ' 件（确认前 ' + cartBeforeBuyNow + '）');
+  }
+
   // 订单结果弹窗
   const resultA = A.d.querySelector('#resultMask');
   if (resultA && !resultA.hidden) {
@@ -244,7 +291,7 @@ async function main() {
   }
 
   /* ---------- 未登录时的拦截 ---------- */
-  console.log('\n[5] 未登录时写工具被拒绝');
+  console.log('\n[6] 未登录时写工具被拒绝');
 
   const guest = await load('/index.html');
   guest.w.agent.open();
@@ -282,7 +329,7 @@ async function main() {
   const askB = (t) => ask(B, 'supportBody', t, (x) => B.w.support.send(x));
 
   /* ---------- 要求 1：多步工具顺序 ---------- */
-  console.log('\n[6] 客服：自主决定工具调用顺序');
+  console.log('\n[7] 客服：自主决定工具调用顺序');
 
   const recB = await askB('推荐一个500元以内的耳机');
   if (recB.includes('¥')) {
@@ -298,7 +345,7 @@ async function main() {
   }
 
   /* ---------- 按序号指代 ---------- */
-  console.log('\n[7] 客服：能听懂"买第二个"这类指代');
+  console.log('\n[8] 客服：能听懂"买第二个"这类指代');
 
   const cartBeforeB = B.w.cart.getTotalCount();
   const pickB = await askB('帮我买第二个');
@@ -324,7 +371,7 @@ async function main() {
   }
 
   /* ---------- 要求 3：状态同步 ---------- */
-  console.log('\n[8] 客服：状态实时同步');
+  console.log('\n[9] 客服：状态实时同步');
 
   await askB('确认');
   if (B.w.cart.getTotalCount() > 0) {
@@ -341,7 +388,7 @@ async function main() {
   }
 
   /* ---------- 要求 4：下单并反馈 ---------- */
-  console.log('\n[9] 客服：下单并反馈订单信息');
+  console.log('\n[10] 客服：下单并反馈订单信息');
 
   const preOrderB = await askB('帮我下单');
   if (preOrderB.includes('¥') && preOrderB.includes('确认')) {
@@ -381,7 +428,7 @@ async function main() {
   }
 
   /* ---------- 客服未登录拦截 ---------- */
-  console.log('\n[10] 客服：未登录时写工具被拒绝');
+  console.log('\n[11] 客服：未登录时写工具被拒绝');
 
   const guestS = await load('/index.html');
   guestS.d.querySelector('#supportTrigger').dispatchEvent(
