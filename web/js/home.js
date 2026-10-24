@@ -59,13 +59,57 @@ async function loadCategories() {
 }
 
 /* ============================================================
-   二、加载商品列表
+   一·五、加载"为你推荐"
+   ------------------------------------------------------------
+   需求里的"商品推荐区域"：首页固定展示 4 件评分最高的商品。
+   数据同样来自后端接口（sort=rating），不是写死在前端的，
+   所以商品改价、下架之后推荐区会自动跟着变。
+
+   用户一旦开始搜索 / 筛选，推荐区就藏起来 ——
+   因为这时候用户想看的是自己的筛选结果，而不是"猜你喜欢"。
    ============================================================ */
 
+async function loadRecommend() {
+  var grid = utils.$('#recommendGrid');
+  if (!grid) return;
+
+  try {
+    var result = await window.api.getProducts({ sort: 'rating', page: 1, pageSize: 4 });
+    components.renderProductGrid(grid, result.items, '暂时没有推荐商品');
+  } catch (err) {
+    // 推荐区是锦上添花的功能，挂了不能影响主列表，所以只记录、不弹错
+    console.error('推荐商品加载失败：', err);
+    grid.innerHTML = '<p class="empty-text">推荐暂时加载不出来，可以往下看全部商品</p>';
+  }
+}
+
+/**
+ * 有没有正在生效的筛选条件
+ */
+function hasActiveFilter() {
+  return !!(homeState.keyword || homeState.category ||
+            homeState.minPrice !== '' || homeState.maxPrice !== '' ||
+            homeState.sort !== 'default');
+}
+
+/**
+ * 根据筛选状态显示 / 隐藏推荐区
+ */
+function syncRecommendVisibility() {
+  var section = utils.$('#recommend');
+  if (section) section.hidden = hasActiveFilter();
+}
+
+/* ============================================================
+   二、加载商品列表
+   ============================================================ */
 async function loadProducts() {
   var grid = utils.$('#productGrid');
   var sub = utils.$('#productsSub');
   var title = utils.$('#productsTitle');
+
+  // 每次筛选条件变了都同步一次推荐区的显隐
+  syncRecommendVisibility();
 
   if (grid) grid.innerHTML = '<p class="loading-text">商品加载中…</p>';
 
@@ -427,8 +471,8 @@ async function initHomePage() {
   // 3. 绑事件
   initHomeEvents();
 
-  // 4. 加载数据（分类和商品可以同时加载，用 Promise.all 一起等）
-  await Promise.all([loadCategories(), loadProducts()]);
+  // 4. 加载数据（分类、推荐、商品三件事互不依赖，用 Promise.all 一起等）
+  await Promise.all([loadCategories(), loadRecommend(), loadProducts()]);
 
   // 5. 分类加载完后再同步一次高亮
   if (homeState.category) syncCategoryCards();
