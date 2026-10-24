@@ -240,4 +240,16 @@
   .product-grid {
     grid-template-columns: 1fr;   /* 一列铺满 */
   }
+
+  /* 320px 宽（相当于 250% 缩放）下，5 个图标按钮每个最少 58px，
+     加起来 306px，比可用宽度 288px 多出 2px，会把页面撑出横向滚动条。
+     这里把按钮和间距一起收窄，正好放得下。 */
+  .header-actions {
+    gap: 0;
+  }
+
+  .icon-btn {
+    min-width: 50px;
+    padding-inline: 4px;
+  }
 }
