@@ -1478,11 +1478,47 @@ function buildNoResultText(need) {
    ============================================================ */
 
 /**
+ * 把"思考 → 调工具 → 结果"渲染成一个可折叠的执行步骤面板。
+ *
+ * 考核 9.5 第 4 条建议在界面上展示这个过程，
+ * 这样用户能直接看到：Agent 查了几次商品、每次传了什么条件、拿回来多少条。
+ *
+ * 折叠面板用 HTML 原生的 <details>/<summary>：
+ * 点一下展开、再点一下收起，不用写一行 JS。
+ *
+ * @param {Array} steps [{ name, args, result }]
+ */
+function buildStepsHtml(steps) {
+  if (!steps || steps.length === 0) return '';
+
+  var rows = '';
+  for (var i = 0; i < steps.length; i++) {
+    var s = steps[i];
+    rows +=
+      '<div class="tool-step">' +
+        '<span class="tool-step-icon">' + window.icons.icon('sparkles', 12) + '</span>' +
+        '<span class="tool-step-body">' +
+          '<span class="tool-step-name">' + utils.escapeHtml(s.name || '') + '</span>' +
+          (s.args && s.args !== '{}' ? ' ' + utils.escapeHtml(s.args) : '') +
+          ' → ' + utils.escapeHtml(s.result || '') +
+        '</span>' +
+      '</div>';
+  }
+
+  return (
+    '<details class="tool-steps">' +
+      '<summary>执行了 ' + steps.length + ' 步 · 点开看过程</summary>' +
+      rows +
+    '</details>'
+  );
+}
+
+/**
  * 往聊天区追加一条消息
  * @param {string} role 'user' | 'assistant'
  * @param {string} text 文字内容
  * @param {Array} products 可选，附带展示的商品卡片
- * @param {Array} steps 可选，工具调用过程（当前不在界面上展示，仅保留数据）
+ * @param {Array} steps 可选，工具调用过程，会渲染成可折叠的执行步骤面板
  */
 function appendMessage(role, text, products, steps) {
   var body = utils.$('#agentBody');
@@ -1495,18 +1531,8 @@ function appendMessage(role, text, products, steps) {
     ? '<div class="msg-avatar">' + window.icons.icon('sparkles', 15) + '</div>'
     : '';
 
-  /* 关于工具调用过程（steps）：
-     ------------------------------------------------------------
-     之前这里会渲染一个「执行了 N 个步骤」的可折叠面板，
-     现在按需求去掉了 —— 界面上只保留对话内容和商品卡片，更干净。
-
-     但 steps 数据仍然在产生和传递（见 runIntent 里的 steps.push），
-     只是不再显示。这样做的好处：
-     1. 想恢复这个功能，只要把下面的渲染代码加回来
-     2. 调试时可以在 Console 里看 window.agent.state 追踪工具调用
-     3. 以后接真模型做「可观测性」（记录完整调用链路）时，
-        这批数据是现成的
-  */
+  // 执行步骤面板（有工具调用时才出现，纯闲聊的回复不会有）
+  var stepsHtml = role === 'assistant' ? buildStepsHtml(steps) : '';
 
   // 商品卡片
   var productsHtml = '';
@@ -1535,6 +1561,7 @@ function appendMessage(role, text, products, steps) {
     avatarHtml +
     '<div>' +
       '<div class="msg-bubble">' + utils.escapeHtml(text) + '</div>' +
+      stepsHtml +
       productsHtml +
     '</div>';
 

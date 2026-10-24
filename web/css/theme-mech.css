@@ -1125,6 +1125,43 @@ body {
   transition: background var(--transition-fast), color var(--transition-fast);
 }
 
+/* 执行步骤面板：细边框 + 等宽字 + 悬浮变橙，像一块"运行日志" */
+.tool-steps {
+  border-radius: var(--radius-xs);
+  border-color: var(--color-border);
+  background: #fff;
+  transition: border-color var(--transition-base), box-shadow var(--transition-base);
+}
+
+.tool-steps:hover {
+  border-color: var(--color-border-strong);
+}
+
+.tool-steps summary {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  color: var(--color-text-sub);
+  transition: color var(--transition-fast), background var(--transition-fast);
+}
+
+.tool-steps summary:hover {
+  color: var(--mech-ink);
+  background: var(--color-bg-soft);
+}
+
+.tool-steps[open] summary {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tool-step-name {
+  color: var(--color-accent);
+}
+
+.tool-step-icon {
+  color: var(--color-accent);
+}
+
 .msg-product-add:hover {
   background: var(--color-accent);
   color: #14181d;

@@ -300,13 +300,24 @@ async function main() {
       fail('AI 回答不对', lastText.slice(0, 150));
     }
 
-    // 工具调用过程面板：按需求已从界面移除，
-    // 这里断言它【不再出现】，防止以后不小心又渲染回来
+    // 工具调用过程面板：考核 9.5 第 4 条建议展示"思考 → 调工具 → 结果"，
+    // 这里断言它【存在】且是可折叠的、默认收起、内容里能看到工具名。
     const toolSteps = home.document.querySelectorAll('.tool-steps');
-    if (toolSteps.length === 0) {
-      ok('工具调用过程面板已移除（界面上不再显示）');
+    const lastPanel = toolSteps[toolSteps.length - 1];
+    if (toolSteps.length > 0) {
+      ok(`工具调用过程面板已展示（${toolSteps.length} 个）`);
     } else {
-      fail(`界面上不应该再有"执行N个步骤"面板，实际找到 ${toolSteps.length} 个`);
+      fail('界面里没有「执行步骤」面板，9.5 第 4 条的过程展示丢了');
+    }
+    if (lastPanel && lastPanel.tagName === 'DETAILS' && lastPanel.open === false) {
+      ok('步骤面板是可折叠的，且默认收起');
+    } else {
+      fail('步骤面板应该用 <details> 且默认收起');
+    }
+    if (lastPanel && lastPanel.querySelectorAll('.tool-step').length > 0) {
+      ok(`步骤面板里列出了具体调用（${lastPanel.querySelectorAll('.tool-step').length} 条）`);
+    } else {
+      fail('步骤面板是空的');
     }
 
     // 商品卡片
