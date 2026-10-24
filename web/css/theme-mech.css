@@ -845,6 +845,11 @@ body {
   transition: color var(--transition-fast);
 }
 
+.cart-item-price {
+  font-family: var(--font-mono);
+  color: var(--mech-ink);
+}
+
 .cart-item:hover .cart-item-name {
   color: var(--color-accent);
 }
