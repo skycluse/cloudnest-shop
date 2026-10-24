@@ -8,14 +8,15 @@
   "scripts": {
     "start": "node server/app.js",
     "dev": "node --watch server/app.js",
-    "test": "npm run test:logic && npm run test:pages && npm run test:auth && npm run test:runtime && npm run test:auth-ui && npm run test:support && npm run test:write",
+    "test": "npm run test:logic && npm run test:pages && npm run test:auth && npm run test:runtime && npm run test:auth-ui && npm run test:support && npm run test:write && npm run test:history",
     "test:logic": "node tools/test-agent-logic.js",
     "test:pages": "node tools/test-pages.js",
     "test:auth": "node tools/test-auth.js",
     "test:runtime": "node tools/test-runtime.js",
     "test:auth-ui": "node tools/test-auth-ui.js",
     "test:support": "node tools/test-support.js",
-    "test:write": "node tools/test-write-tools.js"
+    "test:write": "node tools/test-write-tools.js",
+    "test:history": "node tools/test-chat-history.js"
   },
   "engines": {
     "node": ">=18"
