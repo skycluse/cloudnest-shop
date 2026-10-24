@@ -16,7 +16,8 @@
     "test:auth-ui": "node tools/test-auth-ui.js",
     "test:support": "node tools/test-support.js",
     "test:write": "node tools/test-write-tools.js",
-    "test:history": "node tools/test-chat-history.js"
+    "test:history": "node tools/test-chat-history.js",
+    "eval": "node tools/eval-agent.js"
   },
   "engines": {
     "node": ">=18"
