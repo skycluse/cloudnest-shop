@@ -209,6 +209,7 @@ async function toolSearchProducts(params) {
   var result = await window.api.getProducts({
     keyword: p.keyword || '',
     category: p.category || '',
+    tags: p.tags || [],
     minPrice: p.minPrice === undefined ? '' : p.minPrice,
     maxPrice: p.maxPrice === undefined ? '' : p.maxPrice,
     sort: p.sort || 'price_asc',
@@ -217,7 +218,13 @@ async function toolSearchProducts(params) {
   });
 
   logToolCall('searchProducts',
-    { keyword: p.keyword || '', category: p.category || '', maxPrice: p.maxPrice, minPrice: p.minPrice },
+    {
+      keyword: p.keyword || '',
+      category: p.category || '',
+      tags: p.tags || [],
+      maxPrice: p.maxPrice,
+      minPrice: p.minPrice
+    },
     { total: result.total, ids: result.items.map(function (it) { return it.id; }) });
 
   return result;
@@ -385,6 +392,63 @@ function extractCategory(text) {
   return null;
 }
 
+/* ============================================================
+   场景词 → 商品标签（考核 9.2）
+   ------------------------------------------------------------
+   用户说的是"适合运动"、"办公用"、"打游戏"这种人话，
+   但商品数据里只有标签（运动 / 办公 / 游戏 …）。
+   这里先把人话翻译成标签，再交给后端按标签精确筛，筛得才准。
+   左边是用户可能说的词，右边是商品数据里真实存在的标签。
+   ============================================================ */
+var SCENE_TAG_MAP = [
+  { words: ['跑步', '健身', '锻炼', '运动'], tags: ['运动'] },
+  // 瑜伽也和运动相关，但库里没有"瑜伽"标签，先映射到最接近的「运动」
+  { words: ['瑜伽', '打球', '户外'], tags: ['运动'] },
+  { words: ['防水', '出汗', '汗水'], tags: ['防水'] },
+  { words: ['降噪', '屏蔽噪音'], tags: ['降噪'] },
+  { words: ['无线', '蓝牙'], tags: ['无线'] },
+  { words: ['有线'], tags: ['有线'] },
+  { words: ['打游戏', '玩游戏', '游戏用', '电竞', '游戏'], tags: ['游戏'] },
+  { words: ['办公', '上班', '码字', '打字'], tags: ['办公'] },
+  { words: ['通勤', '地铁', '上下班'], tags: ['通勤'] },
+  { words: ['静音', '不吵'], tags: ['静音'] },
+  { words: ['便携', '带着走', '出门', '小巧'], tags: ['便携'] },
+  { words: ['宿舍', '合租'], tags: ['宿舍'] },
+  { words: ['便宜', '入门', '新手'], tags: ['入门'] }
+];
+
+/**
+ * 从一句话里提取场景标签
+ * @returns {{tags: string[], words: string[]}} 商品数据里对应的标签，以及用户原话里命中的词
+ */
+function extractSceneTags(text) {
+  var tags = [];
+  var words = [];
+
+  for (var i = 0; i < SCENE_TAG_MAP.length; i++) {
+    var group = SCENE_TAG_MAP[i];
+    for (var j = 0; j < group.words.length; j++) {
+      if (text.indexOf(group.words[j]) !== -1) {
+        words.push(group.words[j]);
+        for (var k = 0; k < group.tags.length; k++) {
+          if (tags.indexOf(group.tags[k]) === -1) tags.push(group.tags[k]);
+        }
+        break;   // 同一组命中一次就够了
+      }
+    }
+  }
+
+  return { tags: tags, words: words };
+}
+
+/**
+ * 把标签翻译成给人看的说法（"运动" → "运动场景"）
+ */
+function describeTags(tags) {
+  if (!tags || tags.length === 0) return '';
+  return tags.join('、') + '场景';
+}
+
 /**
  * 判断用户意图
  */
@@ -498,6 +562,7 @@ function understand(text) {
   var intent = decideIntent(text);
   var category = extractCategory(text);
   var budget = extractBudget(text);
+  var scene = extractSceneTags(text);
 
   return {
     intent: intent.type,
@@ -505,6 +570,9 @@ function understand(text) {
     category: category ? category.id : null,
     categoryWord: category ? category.matchedWord : null,
     budget: budget,
+    // 场景词命中的标签（比如"适合运动" → ['运动']），搜索时按标签精确筛
+    tags: scene.tags,
+    sceneWords: scene.words,
     wantsSameBrand: text.indexOf('同一品牌') !== -1 ||
                     text.indexOf('同品牌') !== -1 ||
                     text.indexOf('一个牌子') !== -1 ||
@@ -831,6 +899,19 @@ async function runIntent(need) {
       if (keyword && !need.category) params.keyword = keyword;
       if (need.category && !keyword) params.keyword = need.categoryWord;
 
+      /* 场景词（9.2）：用户说"适合运动"这种人话，
+         翻译成商品标签「运动」，交给后端按标签精确筛。
+         注意场景词本身不能当关键词用 —— "适合运动的耳机"去模糊搜，
+         商品数据里根本没有"适合运动"这几个字。 */
+      var sceneTags = need.tags || [];
+      if (sceneTags.length > 0) {
+        params.tags = sceneTags;
+        // 关键词正好是一个场景词时（比如"运动"），去掉它，免得双重过滤后一个都不剩
+        if (need.sceneWords && need.sceneWords.indexOf(params.keyword) !== -1) {
+          delete params.keyword;
+        }
+      }
+
       steps.push({
         name: 'searchProducts',
         args: JSON.stringify(params),
@@ -839,11 +920,26 @@ async function runIntent(need) {
 
       // 先查一次看总量（用于文案和判断有没有结果）
       var countProbe = await toolSearchProducts({
-        category: params.category, keyword: params.keyword,
+        category: params.category, keyword: params.keyword, tags: params.tags,
         minPrice: params.minPrice, maxPrice: params.maxPrice,
         pageSize: 1
       });
       var totalMatched = countProbe.total;
+
+      /* 场景标签筛完如果一件都不剩，退一步只看品类 + 预算，
+         并在文案里说清楚"没有带某标签的"，不硬凑也不直接说"找不到"。 */
+      var sceneMissed = [];
+      if (totalMatched === 0 && sceneTags.length > 0) {
+        sceneMissed = sceneTags;
+        delete params.tags;
+        params.keyword = need.category ? need.categoryWord : '';
+        steps[steps.length - 1].result = '带「' + sceneTags.join('、') + '」标签的没有，改按品类 + 预算找';
+        var retryProbe = await toolSearchProducts({
+          category: params.category, keyword: params.keyword,
+          minPrice: params.minPrice, maxPrice: params.maxPrice, pageSize: 1
+        });
+        totalMatched = retryProbe.total;
+      }
 
       var result = await toolSearchProducts(params);
       steps[steps.length - 1].result = '匹配 ' + totalMatched + ' 个，精选 ' + result.items.length + ' 个推荐';
@@ -856,16 +952,25 @@ async function runIntent(need) {
         };
       }
 
-      return {
+      var reply = {
         text: buildRecommendText(need, result, totalMatched),
         products: result.items,
         steps: steps,
         query: {
           category: params.category || '',
           keyword: params.keyword || '',
+          tags: params.tags || [],
           maxPrice: params.maxPrice || ''
         }
       };
+
+      // 场景词没筛到东西时，在大段推荐前面加一句说明
+      if (sceneMissed.length > 0) {
+        reply.text = '库里暂时没有标注「' + sceneMissed.join('、') + '」的商品，' +
+                     '我先按品类和预算帮你挑了这几款：\n\n' + reply.text;
+      }
+
+      return reply;
     }
 
     /* ---------- 便宜一点（多轮上下文） ---------- */
@@ -906,6 +1011,8 @@ async function runIntent(need) {
       var refineParams = { sort: 'price_asc', pageSize: 50 };
       if (base.category) refineParams.category = base.category;
       if (base.keyword) refineParams.keyword = base.keyword;
+      // 上一轮如果按场景标签（比如"运动"）筛的，这一轮继续沿用
+      if (base.tags && base.tags.length > 0) refineParams.tags = base.tags;
 
       // 上限：用户明确说了预算就用用户的，否则用上一轮的最高价
       if (need.budget) {
@@ -1390,13 +1497,28 @@ function extractSearchKeyword(text) {
 }
 
 /**
+ * 把标签翻译成给人看的说法（"运动" → "运动场景"）
+ */
+function describeTags(tags) {
+  if (!tags || tags.length === 0) return '';
+  return tags.join('、') + '场景';
+}
+
+/**
  * 生成"推荐商品"的回复文案（带推荐理由）
  */
 function buildRecommendText(need, result, totalMatched) {
   var lines = [];
   var total = totalMatched || result.total;
+  var sceneText = describeTags(need.tags);
 
-  if (need.category && need.budget) {
+  if (sceneText) {
+    // 场景筛选优先，文案里把"场景 + 品类 + 预算"都说清楚，用户才知道是按什么筛的
+    lines.push('在 ¥' + (need.budget ? utils.formatPrice(need.budget) + ' 以内的' : '') +
+               (need.category ? components.getCategoryName(need.category) : '商品') + '里，' +
+               '带「' + need.tags.join('、') + '」标签的共 ' + total + ' 款，帮你挑了这 ' +
+               Math.min(3, result.items.length) + ' 个：');
+  } else if (need.category && need.budget) {
     lines.push('在 ¥' + utils.formatPrice(need.budget) + ' 以内的' +
                components.getCategoryName(need.category) + '里，我筛出 ' + total + ' 款，' +
                '帮你挑了这 3 个：');

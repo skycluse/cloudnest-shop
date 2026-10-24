@@ -117,7 +117,8 @@ function setStoredToken(token) {
 
 /**
  * 查商品列表。参数都是可选的，不传就查全部。
- * @param {object} params { keyword, category, minPrice, maxPrice, sort, page, pageSize }
+ * @param {object} params { keyword, category, tags, minPrice, maxPrice, sort, page, pageSize }
+ *   tags 可以是数组（['运动','防水']），内部会拼成 "运动,防水"
  * @returns {Promise<{items, total, page, pageSize, totalPages}>}
  */
 function getProducts(params) {
@@ -230,6 +231,12 @@ function buildQueryString(params) {
 
     // 跳过空值：不然会变成 ?keyword=undefined
     if (value === undefined || value === null || value === '') continue;
+
+    // 数组转成逗号分隔的字符串：['运动','防水'] → 运动,防水
+    if (Array.isArray(value)) {
+      if (value.length === 0) continue;
+      value = value.join(',');
+    }
 
     parts.push(encodeURIComponent(key) + '=' + encodeURIComponent(value));
   }

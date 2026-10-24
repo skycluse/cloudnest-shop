@@ -52,13 +52,24 @@ function writeOrders(list) {
  */
 function findProducts(query) {
   // 先把查询参数一个个取出来，并给上默认值
-  const keyword = (query.keyword || '').trim().toLowerCase();
+  let keyword = (query.keyword || '').trim().toLowerCase();
   const category = (query.category || '').trim();
   const minPrice = query.minPrice === undefined || query.minPrice === '' ? null : Number(query.minPrice);
   const maxPrice = query.maxPrice === undefined || query.maxPrice === '' ? null : Number(query.maxPrice);
   const sort = (query.sort || 'default').trim();
   const page = Math.max(1, parseInt(query.page, 10) || 1);
   const pageSize = Math.min(60, Math.max(1, parseInt(query.pageSize, 10) || 12));
+
+  /* tags：按标签精确筛选，多个标签用英文逗号分隔，例如 ?tags=运动,防水
+     ------------------------------------------------------------
+     为什么需要它？
+     关键词搜索是"模糊包含"：搜"运动"只能命中名字/简介/标签里正好写了"运动"的商品，
+     而且"适合跑步的耳机"这种人话，商品数据里根本不会出现"适合跑步"这四个字。
+     AI 助手会先把"跑步"翻译成标签「运动」，再用 tags 精确筛 —— 这样才筛得准。 */
+  const tagList = (query.tags || '')
+    .split(',')
+    .map(function (t) { return t.trim(); })
+    .filter(Boolean);
 
   // 1) 过滤：一层层筛，能留下来的才进入下一步
   let list = products.slice(); // slice() 复制一份，避免改到原数组
@@ -74,6 +85,14 @@ function findProducts(query) {
         (p.tags || []).join(' ')
       ].join(' ').toLowerCase();
       return haystack.indexOf(keyword) !== -1;
+    });
+  }
+
+  if (tagList.length > 0) {
+    list = list.filter(function (p) {
+      const own = p.tags || [];
+      // 必须【同时】带有所有标签
+      return tagList.every(function (t) { return own.indexOf(t) !== -1; });
     });
   }
 

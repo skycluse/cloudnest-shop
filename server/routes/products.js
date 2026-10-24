@@ -20,6 +20,7 @@ const router = express.Router();
  * 查询参数：
  *   keyword   关键词，搜商品名/简介/标签/品牌
  *   category  分类 id
+ *   tags      按标签精确筛选，多个用逗号分隔，如 tags=运动,防水（必须全部具备）
  *   minPrice  最低价
  *   maxPrice  最高价
  *   sort      price_asc | price_desc | rating | default
