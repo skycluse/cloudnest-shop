@@ -1,0 +1,1688 @@
+/* ============================================================
+   theme-mech.css —— 机械化主题层（Mechanical / Industrial Theme）
+   ------------------------------------------------------------
+   为什么单独开一个文件，而不是去改 components.css？
+   1. 这个文件在 HTML 里**最后加载**，用同名选择器就能覆盖前面的默认样式，
+      不用改动 layout.css / components.css / pages/*.css 的任何一行，
+      原有结构、栅格、响应式断点全部照旧 —— 出问题的面积最小。
+   2. 想回到原来的风格，把 HTML 里这一行 <link> 删掉就行，一键回滚。
+
+   这套视觉的"机械感"来自四个具体手段（不是玄学）：
+   ① 硬边：圆角压到 2~4px，界面由"卡片"变成"面板/零件"
+   ② 线框：1px 细边框 + 32px 蓝图网格底纹，像工程图纸
+   ③ 等宽字：编号、价格、标签统一用等宽字体，像仪表读数
+   ④ 硬投影：hover 时位移 + 4px 实心阴影（不用模糊阴影），像零件被"顶起来"
+   ============================================================ */
+
+/* ============================================================
+   一、设计令牌（Design Tokens）
+   ------------------------------------------------------------
+   注意：variables.css 里已经定义过同名变量，
+   因为本文件后加载，且 :root 优先级相同，所以这里的值会生效。
+   于是"全站换色"只改这一块，页面样式一行都不用动。
+   ============================================================ */
+:root {
+  /* ---- 颜色：石墨黑 + 安全橙 ---- */
+  --color-primary: #14181d;
+  --color-primary-dark: #000000;
+  --color-primary-light: #eff1f2;
+  --color-accent: #ff6a00;
+  --color-danger: #d1281c;
+  --color-success: #0f7a45;
+
+  --color-text: #15191e;
+  --color-text-sub: #5a636b;
+  --color-text-light: #8b949c;
+  --color-text-invert: #ffffff;
+
+  --color-bg: #ffffff;
+  --color-bg-soft: #f4f5f6;
+  --color-bg-mute: #e7eaec;
+  --color-border: #d9dde1;
+  --color-border-strong: #b2b9bf;
+
+  /* ---- 硬投影：4px 实心偏移，机械感的关键 ---- */
+  --mech-shadow: 4px 4px 0 rgba(20, 24, 29, 0.85);
+  --mech-shadow-soft: 4px 4px 0 rgba(20, 24, 29, 0.16);
+  --mech-grid: rgba(20, 24, 29, 0.05);
+  --mech-ink: #14181d;
+
+  --shadow-xs: 0 1px 0 rgba(20, 24, 29, 0.06);
+  --shadow-sm: 0 2px 0 rgba(20, 24, 29, 0.08);
+  --shadow-md: 0 10px 20px rgba(20, 24, 29, 0.10);
+  --shadow-lg: 0 16px 32px rgba(20, 24, 29, 0.14);
+  --shadow-xl: 0 28px 56px rgba(20, 24, 29, 0.20);
+
+  /* ---- 圆角：全部压平 ---- */
+  --radius-xs: 2px;
+  --radius-sm: 2px;
+  --radius-md: 3px;
+  --radius-lg: 4px;
+  --radius-xl: 6px;
+  --radius-full: 2px;
+
+  /* ---- 等宽字体优先用系统自带的，不额外加载字体文件 ---- */
+  --font-mono: "JetBrains Mono", "Cascadia Mono", "SFMono-Regular", Consolas,
+    "Liberation Mono", Menlo, monospace;
+
+  /* ---- 过渡：比默认更快一点，机械感讲究"干脆" ---- */
+  --transition-fast: 0.12s cubic-bezier(0.2, 0.7, 0.3, 1);
+  --transition-base: 0.2s cubic-bezier(0.2, 0.7, 0.3, 1);
+  --transition-slow: 0.32s cubic-bezier(0.2, 0.9, 0.25, 1);
+}
+
+/* ============================================================
+   二、页面底色：蓝图网格
+   ------------------------------------------------------------
+   用两层 linear-gradient 画 1px 的横竖线，32px 一格。
+   纯 CSS，不加载图片，缩放时网格跟着一起缩放。
+   ============================================================ */
+body {
+  background-color: #eceef0;
+  background-image:
+    linear-gradient(to right, var(--mech-grid) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--mech-grid) 1px, transparent 1px);
+  background-size: 32px 32px;
+
+  /* 页面内容比屏幕短时（比如未登录的订单页），
+     让页脚仍然贴在底部，不会在下面露出一截网格 */
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+#main {
+  flex: 1 0 auto;
+}
+
+::selection {
+  background: var(--color-accent);
+  color: #fff;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* 滚动条也做成细的工业风格（Chrome / Edge / Safari 生效） */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg-mute);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-strong);
+  border: 2px solid var(--color-bg-mute);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--mech-ink);
+}
+
+/* ============================================================
+   三、顶部导航：深色机身 + 橙色状态条
+   ============================================================ */
+.site-header {
+  background: #121619;
+  border-bottom: 1px solid #000;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  transition: box-shadow var(--transition-base);
+}
+
+/* 顶部 3px 橙条，像设备上的"运行指示灯" */
+.site-header::before {
+  content: '';
+  display: block;
+  height: 3px;
+  background: var(--color-accent);
+}
+
+.site-header.is-scrolled {
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+}
+
+.logo {
+  color: #ffffff;
+  letter-spacing: 0.02em;
+}
+
+.logo-mark {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  color: var(--color-accent);
+  transition: border-color var(--transition-base), transform var(--transition-base);
+}
+
+.logo:hover .logo-mark {
+  border-color: var(--color-accent);
+  transform: rotate(-6deg);
+}
+
+/* ---- 搜索框：深色内嵌 ---- */
+.search-input {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  border-radius: var(--radius-xs);
+}
+
+.search-input::placeholder {
+  color: #8d979f;
+}
+
+.search-input:hover {
+  border-color: rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.search-input:focus {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(255, 106, 0, 0.22);
+}
+
+.search-icon {
+  color: #8d979f;
+}
+
+.search-btn {
+  background: var(--color-accent);
+  color: #14181d;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  transition: background var(--transition-fast), transform var(--transition-fast);
+}
+
+.search-btn:hover {
+  background: #ff8a33;
+  transform: translateY(-1px);
+}
+
+/* ---- 导航图标按钮：悬浮时图标上浮 + 一条橙色下划线滑出 ---- */
+.icon-btn {
+  color: #c7ced4;
+  border-radius: var(--radius-xs);
+  transition: color var(--transition-fast), background var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.icon-btn::before {
+  content: '';
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 4px;
+  height: 2px;
+  background: var(--color-accent);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform var(--transition-base);
+}
+
+.icon-btn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.icon-btn:hover::before {
+  transform: scaleX(1);
+}
+
+.icon-btn:hover .icon {
+  transform: translateY(-2px);
+}
+
+.icon-label {
+  letter-spacing: 0.06em;
+}
+
+.cart-trigger {
+  color: #ffffff;
+}
+
+.cart-badge {
+  background: var(--color-accent);
+  color: #14181d;
+  font-family: var(--font-mono);
+  border-radius: var(--radius-xs);
+}
+
+/* 用户头像：橙色方块，比圆形更"工业" */
+.user-avatar {
+  background: var(--color-accent);
+  color: #14181d;
+  border-radius: var(--radius-xs);
+  font-family: var(--font-mono);
+}
+
+.user-trigger {
+  color: #d5dade;
+}
+
+.support-trigger::after {
+  box-shadow: 0 0 0 2px #121619;
+}
+
+.support-trigger:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+/* ============================================================
+   四、按钮
+   ------------------------------------------------------------
+   统一套路：
+   默认 = 深色实心 / 悬浮 = 橙色 + 硬投影 + 上移 2px
+   这种"按下前先抬起来"的动作，是机械感最直接的来源。
+   ============================================================ */
+.btn {
+  border-radius: var(--radius-xs);
+  letter-spacing: 0.01em;
+  position: relative;
+  overflow: hidden;
+  transition: background var(--transition-fast), color var(--transition-fast),
+    border-color var(--transition-fast), transform var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+/* 悬浮时一道白色斜光扫过，给"金属反光"的感觉 */
+.btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, 0.28) 50%, transparent 65%);
+  transform: translateX(-130%);
+  transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.3, 1);
+  pointer-events: none;
+}
+
+.btn:hover::after {
+  transform: translateX(130%);
+}
+
+.btn-primary {
+  background: var(--mech-ink);
+  border-color: var(--mech-ink);
+  color: #fff;
+  box-shadow: none;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #14181d;
+  box-shadow: var(--mech-shadow-soft);
+  transform: translateY(-2px);
+}
+
+.btn-outline {
+  background: #fff;
+  border-color: var(--color-border-strong);
+  color: var(--color-text);
+}
+
+.btn-outline:hover:not(:disabled) {
+  background: var(--mech-ink);
+  border-color: var(--mech-ink);
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: var(--mech-shadow-soft);
+}
+
+.btn-ghost {
+  background: var(--color-bg-mute);
+  color: var(--color-text);
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: #dde1e4;
+  transform: translateY(-1px);
+}
+
+.btn:active {
+  transform: translateY(0) scale(0.99);
+}
+
+/* ============================================================
+   五、区块标题
+   ============================================================ */
+.section-head {
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--color-border-strong);
+  position: relative;
+}
+
+/* 标题前的小橙块，替代原来的纯文字标题 */
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  letter-spacing: -0.01em;
+}
+
+.section-title::before {
+  content: '';
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+  background: var(--color-accent);
+}
+
+.section-sub {
+  margin-top: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-text-light);
+}
+
+/* ============================================================
+   六、Hero 横幅
+   ============================================================ */
+.hero {
+  background: #f7f8f9;
+  border-bottom: 1px solid var(--color-border-strong);
+  position: relative;
+}
+
+/* 比页面更密的网格，让首屏像一块"工作台面" */
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, rgba(20, 24, 29, 0.07) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(20, 24, 29, 0.07) 1px, transparent 1px);
+  background-size: 24px 24px;
+  pointer-events: none;
+}
+
+.hero-inner {
+  position: relative;
+}
+
+.hero-eyebrow {
+  border-radius: var(--radius-xs);
+  background: #fff;
+  border: 1px solid var(--color-border-strong);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 4px 10px 4px 24px;
+  position: relative;
+}
+
+.hero-eyebrow::before {
+  content: '';
+  position: absolute;
+  left: 9px;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  margin-top: -3px;
+  background: var(--color-accent);
+}
+
+.hero-title {
+  letter-spacing: -0.015em;
+}
+
+/* 标题下面一条短橙线，像图纸上的标注线 */
+.hero-title::after {
+  content: '';
+  display: block;
+  width: 72px;
+  height: 3px;
+  margin-top: var(--space-5);
+  background: var(--color-accent);
+}
+
+/* ---- 右侧装饰：从紫色 blob 换成旋转的准星线框 ---- */
+.hero-blob {
+  width: 280px;
+  height: 280px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 50%, rgba(255, 106, 0, 0.12), transparent 62%);
+  border: 1px dashed rgba(20, 24, 29, 0.3);
+  opacity: 1;
+  position: relative;
+  animation: mechSpin 32s linear infinite;
+}
+
+@keyframes mechSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* 准星：两条十字线 */
+.hero-blob::before,
+.hero-blob::after {
+  content: '';
+  position: absolute;
+  background: rgba(20, 24, 29, 0.18);
+}
+
+.hero-blob::before {
+  left: 50%;
+  top: -18px;
+  bottom: -18px;
+  width: 1px;
+}
+
+.hero-blob::after {
+  top: 50%;
+  left: -18px;
+  right: -18px;
+  height: 1px;
+}
+
+/* ---- 三张浮动商品照片：做成"零件卡" ---- */
+.hero-float {
+  background: #fff;
+  border: 1px solid var(--mech-ink);
+  border-radius: var(--radius-xs);
+  box-shadow: var(--mech-shadow-soft);
+  transition: box-shadow var(--transition-base), transform var(--transition-base);
+}
+
+.hero-float:hover {
+  box-shadow: var(--mech-shadow);
+  animation-play-state: paused;
+}
+
+.hero-float img {
+  border-radius: 0;
+}
+
+/* ============================================================
+   七、分类卡片
+   ============================================================ */
+.category-card {
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xs);
+  position: relative;
+  overflow: hidden;
+  transition: transform var(--transition-base), border-color var(--transition-base),
+    box-shadow var(--transition-base), background var(--transition-base);
+}
+
+/* 悬浮时铺一层 45° 斜纹，像防滑面板 */
+.category-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(20, 24, 29, 0.05) 0 1px,
+    transparent 1px 9px
+  );
+  opacity: 0;
+  transition: opacity var(--transition-base);
+  pointer-events: none;
+}
+
+.category-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--mech-ink);
+  background: #fff;
+  box-shadow: var(--mech-shadow);
+}
+
+.category-card:hover::before {
+  opacity: 1;
+}
+
+.category-card.is-active {
+  border-color: var(--color-accent);
+  background: #fff;
+  box-shadow: inset 0 0 0 1px var(--color-accent);
+}
+
+.category-icon {
+  color: var(--color-text-sub);
+  transition: transform var(--transition-base), color var(--transition-base);
+}
+
+.category-card:hover .category-icon {
+  transform: translateY(-2px);
+  color: var(--color-accent);
+}
+
+.category-card.is-active .category-icon {
+  color: var(--color-accent);
+}
+
+.category-name {
+  position: relative;
+  letter-spacing: 0.02em;
+}
+
+.category-count {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text-light);
+}
+
+/* ============================================================
+   八、筛选工具条
+   ============================================================ */
+.filter-bar {
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xs);
+  transition: border-color var(--transition-base), box-shadow var(--transition-base);
+}
+
+.filter-bar:hover {
+  border-color: var(--color-border-strong);
+  box-shadow: 0 2px 0 rgba(20, 24, 29, 0.04);
+}
+
+.filter-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-text-light);
+}
+
+.filter-select,
+.filter-input {
+  border-radius: var(--radius-xs);
+  font-size: var(--fs-sm);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast),
+    background var(--transition-fast);
+}
+
+.filter-select:hover,
+.filter-input:hover {
+  border-color: var(--mech-ink);
+}
+
+.filter-select:focus,
+.filter-input:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(255, 106, 0, 0.16);
+}
+
+.filter-chip {
+  border-radius: var(--radius-xs);
+  background: #fff;
+  border: 1px solid var(--color-border-strong);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-weight: 500;
+  transition: border-color var(--transition-fast), color var(--transition-fast),
+    background var(--transition-fast);
+}
+
+.filter-chip:hover {
+  border-color: var(--mech-ink);
+  background: var(--color-bg-soft);
+}
+
+.filter-chip button {
+  transition: opacity var(--transition-fast), transform var(--transition-fast);
+}
+
+.filter-chip button:hover {
+  transform: rotate(90deg);
+}
+
+/* ============================================================
+   九、商品卡片
+   ------------------------------------------------------------
+   hover 三件事同时发生：
+   ① 卡片抬起 + 4px 实心投影（零件被顶起来）
+   ② 顶部一条橙线从左往右拉开（通电）
+   ③ 图片轻微放大（镜头对焦）
+   ============================================================ */
+.product-card {
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xs);
+  position: relative;
+  transition: transform var(--transition-base), box-shadow var(--transition-base),
+    border-color var(--transition-base);
+}
+
+.product-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--color-accent);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform var(--transition-slow);
+  z-index: 2;
+}
+
+.product-card:hover {
+  transform: translateY(-5px);
+  border-color: var(--mech-ink);
+  box-shadow: var(--mech-shadow);
+}
+
+.product-card:hover::after {
+  transform: scaleX(1);
+}
+
+.product-card:hover .product-thumb img {
+  transform: scale(1.07);
+}
+
+.product-thumb {
+  background: var(--color-bg-mute);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.product-cat-tag {
+  border-radius: 0;
+  background: var(--mech-ink);
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  padding: 3px 7px;
+  backdrop-filter: none;
+}
+
+.product-name {
+  letter-spacing: 0.005em;
+}
+
+.product-card a.card-link:hover .product-name {
+  color: var(--color-accent);
+}
+
+.product-price {
+  font-family: var(--font-mono);
+  color: var(--mech-ink);
+  letter-spacing: -0.02em;
+}
+
+.product-price .unit {
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+.product-rating {
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.tag {
+  border-radius: 0;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-sub);
+  font-size: 10px;
+  line-height: 1.7;
+  transition: border-color var(--transition-fast), color var(--transition-fast),
+    background var(--transition-fast);
+}
+
+.tag:hover {
+  border-color: var(--mech-ink);
+  color: var(--color-text);
+  background: var(--color-bg-soft);
+}
+
+/* 悬浮卡片时，加购按钮跟着变橙，形成"主按钮高亮"的层级 */
+.product-card:hover .btn-add:not(:disabled) {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #14181d;
+}
+
+/* ============================================================
+   十、分页
+   ============================================================ */
+.page-btn {
+  border-radius: var(--radius-xs);
+  font-family: var(--font-mono);
+  transition: border-color var(--transition-fast), color var(--transition-fast),
+    background var(--transition-fast), transform var(--transition-fast);
+}
+
+.page-btn:hover:not(:disabled) {
+  border-color: var(--mech-ink);
+  color: var(--color-text);
+  background: var(--color-bg-soft);
+  transform: translateY(-1px);
+}
+
+.page-btn.is-active {
+  background: var(--mech-ink);
+  border-color: var(--mech-ink);
+  color: #fff;
+  box-shadow: inset 0 -3px 0 var(--color-accent);
+}
+
+.page-info {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+
+/* ============================================================
+   十一、购物车抽屉
+   ============================================================ */
+.drawer-mask,
+.modal-mask,
+.support-mask {
+  background: rgba(10, 12, 15, 0.55);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.cart-drawer {
+  border-left: 1px solid var(--mech-ink);
+  box-shadow: -18px 0 40px rgba(0, 0, 0, 0.18);
+}
+
+.drawer-head {
+  border-bottom: 2px solid var(--mech-ink);
+}
+
+.drawer-title {
+  font-family: var(--font-mono);
+  font-size: var(--fs-md);
+  letter-spacing: 0.06em;
+}
+
+.drawer-count {
+  font-family: var(--font-mono);
+  color: var(--color-accent);
+}
+
+.drawer-close {
+  border-radius: var(--radius-xs);
+  transition: background var(--transition-fast), color var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.drawer-close:hover {
+  background: var(--mech-ink);
+  color: #fff;
+  transform: rotate(90deg);
+}
+
+.cart-item {
+  transition: border-color var(--transition-fast);
+}
+
+.cart-item:hover {
+  border-bottom-color: var(--color-border-strong);
+}
+
+.cart-item-img {
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--color-border);
+  transition: border-color var(--transition-fast);
+}
+
+.cart-item:hover .cart-item-img {
+  border-color: var(--mech-ink);
+}
+
+.cart-item-name {
+  transition: color var(--transition-fast);
+}
+
+.cart-item:hover .cart-item-name {
+  color: var(--color-accent);
+}
+
+.qty-stepper {
+  border-radius: var(--radius-xs);
+  transition: border-color var(--transition-fast);
+}
+
+.qty-stepper:hover {
+  border-color: var(--mech-ink);
+}
+
+.qty-btn {
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.qty-btn:hover:not(:disabled) {
+  background: var(--mech-ink);
+  color: #fff;
+}
+
+.drawer-foot {
+  border-top: 1px solid var(--color-border-strong);
+}
+
+.cart-total {
+  font-family: var(--font-mono);
+  color: var(--mech-ink);
+}
+
+.cart-empty-icon,
+.empty-icon {
+  border-radius: var(--radius-xs);
+  border: 1px dashed var(--color-border-strong);
+  background: transparent;
+}
+
+/* 购物车抽屉打开时，右下角的 AI 助手按钮会压住「去结算」，
+   这里用相邻兄弟选择器把它藏起来（抽屉在 DOM 里排在它前面）。
+   纯 CSS，不用改 JS，关掉抽屉自动恢复。 */
+.cart-drawer.is-open ~ .agent-fab {
+  display: none;
+}
+
+/* ============================================================
+   十二、弹窗 / 表单
+   ============================================================ */
+.modal {
+  border: 1px solid var(--mech-ink);
+  border-radius: var(--radius-xs);
+  box-shadow: 8px 8px 0 rgba(20, 24, 29, 0.18);
+}
+
+.modal-head {
+  border-bottom: 1px solid var(--color-border-strong);
+}
+
+.modal-title {
+  letter-spacing: 0.01em;
+}
+
+.form-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text-sub);
+}
+
+.form-input {
+  border-radius: var(--radius-xs);
+  background: var(--color-bg-soft);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast),
+    background var(--transition-fast);
+}
+
+.form-input:hover {
+  border-color: var(--mech-ink);
+}
+
+.form-input:focus {
+  background: #fff;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(255, 106, 0, 0.16);
+}
+
+.checkout-summary,
+.result-info {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xs);
+  background: var(--color-bg-soft);
+}
+
+.result-icon {
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--color-success);
+  background: rgba(15, 122, 69, 0.08);
+}
+
+.toast {
+  border-radius: var(--radius-xs);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.02em;
+}
+
+/* ============================================================
+   十三、AI 购物助手（深色机身 + 橙色指示灯）
+   ============================================================ */
+.agent-fab {
+  background: var(--mech-ink);
+  border: 1px solid #000;
+  border-radius: var(--radius-xs);
+  color: #fff;
+  box-shadow: 4px 4px 0 rgba(20, 24, 29, 0.32);
+}
+
+.agent-fab:hover {
+  background: var(--color-accent);
+  color: #14181d;
+  border-color: var(--color-accent);
+  transform: translateY(-3px);
+  box-shadow: 4px 6px 0 rgba(20, 24, 29, 0.3);
+}
+
+.agent-fab-icon {
+  color: var(--color-accent);
+  transition: color var(--transition-fast);
+}
+
+.agent-fab:hover .agent-fab-icon {
+  color: #14181d;
+}
+
+.agent-panel {
+  border: 1px solid var(--mech-ink);
+  border-radius: var(--radius-xs);
+  box-shadow: 0 24px 48px rgba(20, 24, 29, 0.28);
+}
+
+.agent-head {
+  background: var(--mech-ink);
+  border-bottom: 2px solid var(--color-accent);
+  border-radius: 0;
+}
+
+.agent-avatar {
+  border-radius: var(--radius-xs);
+  background: rgba(255, 106, 0, 0.14);
+  color: var(--color-accent);
+}
+
+.agent-title {
+  letter-spacing: 0.02em;
+}
+
+.agent-status {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  opacity: 0.7;
+}
+
+.agent-body {
+  background: var(--color-bg-soft);
+}
+
+.msg-bubble {
+  border-radius: var(--radius-xs);
+}
+
+.msg-assistant .msg-bubble {
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-accent);
+  border-top-left-radius: var(--radius-xs);
+}
+
+.msg-user .msg-bubble {
+  background: var(--mech-ink);
+  color: #fff;
+  border-radius: var(--radius-xs);
+}
+
+.msg-avatar {
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--color-border);
+}
+
+.chip {
+  border-radius: var(--radius-xs);
+  border-color: var(--color-border-strong);
+  font-size: var(--fs-xs);
+  transition: border-color var(--transition-fast), color var(--transition-fast),
+    background var(--transition-fast), transform var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.chip:hover {
+  border-color: var(--mech-ink);
+  color: var(--mech-ink);
+  background: #fff;
+  transform: translateY(-2px);
+  box-shadow: 2px 2px 0 rgba(20, 24, 29, 0.15);
+}
+
+.agent-input,
+.support-input {
+  border-radius: var(--radius-xs);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast),
+    background var(--transition-fast);
+}
+
+.agent-input:hover,
+.support-input:hover {
+  border-color: var(--color-border-strong);
+  background: #fff;
+}
+
+.agent-input:focus,
+.support-input:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(255, 106, 0, 0.16);
+}
+
+.agent-send {
+  border-radius: var(--radius-xs);
+  background: var(--mech-ink);
+  transition: background var(--transition-fast), transform var(--transition-fast);
+}
+
+.agent-send:hover:not(:disabled) {
+  background: var(--color-accent);
+  color: #14181d;
+  transform: translateY(-1px);
+}
+
+.msg-product {
+  border-radius: var(--radius-xs);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.msg-product:hover {
+  border-color: var(--mech-ink);
+  box-shadow: var(--mech-shadow-soft);
+  transform: translateX(2px);
+}
+
+.msg-product img {
+  border-radius: 0;
+  border: 1px solid var(--color-border);
+}
+
+.msg-product-add {
+  border-radius: var(--radius-xs);
+  background: var(--mech-ink);
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.msg-product-add:hover {
+  background: var(--color-accent);
+  color: #14181d;
+}
+
+/* ============================================================
+   十四、AI 客服（钢蓝机身，和购物助手区分开）
+   ============================================================ */
+.support-panel {
+  border-left: 1px solid #0d2a3a;
+  box-shadow: -18px 0 40px rgba(0, 0, 0, 0.18);
+}
+
+.support-head {
+  background: #12384f;
+  border-bottom: 2px solid #2f7fa8;
+}
+
+.support-avatar {
+  border-radius: var(--radius-xs);
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.support-title {
+  letter-spacing: 0.02em;
+}
+
+.support-status {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  opacity: 0.75;
+}
+
+.support-body {
+  background: var(--color-bg-soft);
+}
+
+/* 客服面板里的气泡改成钢蓝，别再跟着购物助手的橙色走 */
+.support-body .msg-assistant .msg-bubble {
+  border-left-color: #2f7fa8;
+}
+
+.support-body .msg-user .msg-bubble {
+  background: #12384f;
+}
+
+.support-body .msg-avatar {
+  border-color: rgba(18, 56, 79, 0.25);
+  color: #12384f;
+  background: rgba(18, 56, 79, 0.06);
+}
+
+.support-chips {
+  border-top: 1px solid var(--color-border-strong);
+}
+
+.support-chips .chip:hover,
+.support-quick .chip:hover {
+  border-color: #12384f;
+  color: #12384f;
+  background: rgba(18, 56, 79, 0.06);
+}
+
+.support-send {
+  border-radius: var(--radius-xs);
+  background: #12384f;
+  transition: background var(--transition-fast), transform var(--transition-fast);
+}
+
+.support-send:hover:not(:disabled) {
+  background: #2f7fa8;
+  transform: translateY(-1px);
+}
+
+/* ============================================================
+   十五、用户下拉菜单 / 登录弹窗
+   ============================================================ */
+.user-dropdown {
+  border: 1px solid var(--mech-ink);
+  border-radius: var(--radius-xs);
+  box-shadow: 6px 6px 0 rgba(20, 24, 29, 0.16);
+}
+
+.user-dropdown-head {
+  border-bottom: 1px solid var(--color-border-strong);
+}
+
+.user-menu-item {
+  border-radius: 0;
+  border-left: 2px solid transparent;
+  transition: background var(--transition-fast), color var(--transition-fast),
+    border-color var(--transition-fast), padding-left var(--transition-fast);
+}
+
+.user-menu-item:hover {
+  background: var(--color-bg-soft);
+  color: var(--color-text);
+  border-left-color: var(--color-accent);
+  padding-left: var(--space-4);
+}
+
+.user-menu-item.is-danger:hover {
+  border-left-color: var(--color-danger);
+  color: var(--color-danger);
+  background: rgba(209, 40, 28, 0.06);
+}
+
+.auth-hint {
+  border-radius: var(--radius-xs);
+  border-left: 3px solid var(--color-border-strong);
+}
+
+.auth-switch-btn {
+  color: var(--mech-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.auth-switch-btn:hover {
+  color: var(--color-accent);
+  opacity: 1;
+}
+
+/* ============================================================
+   十六、商品详情页
+   ============================================================ */
+.breadcrumb {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
+.breadcrumb a {
+  transition: color var(--transition-fast);
+}
+
+.breadcrumb a:hover {
+  color: var(--color-accent);
+}
+
+.detail-image-box {
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--color-border-strong);
+  transition: border-color var(--transition-base), box-shadow var(--transition-base);
+}
+
+.detail-image-box:hover {
+  border-color: var(--mech-ink);
+  box-shadow: var(--mech-shadow-soft);
+}
+
+.brand-badge {
+  border-radius: 0;
+  background: var(--mech-ink);
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+}
+
+.detail-title {
+  letter-spacing: -0.01em;
+}
+
+.detail-price-box {
+  background: #fff;
+  border: 1px solid var(--color-border-strong);
+  border-left: 4px solid var(--color-accent);
+  border-radius: var(--radius-xs);
+}
+
+.detail-price {
+  font-family: var(--font-mono);
+  color: var(--mech-ink);
+}
+
+.detail-meta-list {
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--color-border);
+}
+
+.detail-meta-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--color-text-light);
+}
+
+.detail-service .icon-svg {
+  color: var(--color-success);
+}
+
+.detail-tag-cloud .tag {
+  border-radius: 0;
+  transition: border-color var(--transition-fast), color var(--transition-fast),
+    background var(--transition-fast), transform var(--transition-fast);
+}
+
+.detail-tag-cloud .tag:hover {
+  background: var(--mech-ink);
+  border-color: var(--mech-ink);
+  color: #fff;
+  transform: translateY(-2px);
+}
+
+.spec-table tr {
+  transition: background var(--transition-fast);
+}
+
+.spec-table tbody tr:hover {
+  background: var(--color-bg-soft);
+}
+
+.spec-table th {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+
+.detail-error-icon {
+  border-radius: var(--radius-xs);
+  border: 1px dashed var(--color-border-strong);
+  background: transparent;
+}
+
+/* ============================================================
+   十七、订单页
+   ============================================================ */
+.order-card {
+  border-radius: var(--radius-xs);
+  transition: box-shadow var(--transition-base), border-color var(--transition-base),
+    transform var(--transition-base);
+}
+
+.order-card:hover {
+  border-color: var(--mech-ink);
+  box-shadow: var(--mech-shadow-soft);
+  transform: translateY(-2px);
+}
+
+.order-card-head {
+  border-bottom: 1px solid var(--color-border-strong);
+}
+
+.order-no {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
+.order-status {
+  border-radius: 0;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border: 1px solid currentColor;
+  padding: 1px var(--space-2);
+}
+
+.order-item-img {
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--color-border);
+  transition: border-color var(--transition-fast), transform var(--transition-fast);
+}
+
+.order-item:hover .order-item-img {
+  border-color: var(--mech-ink);
+  transform: scale(1.04);
+}
+
+.order-card-foot {
+  border-top: 1px solid var(--color-border-strong);
+}
+
+.customer-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+
+.order-total strong {
+  font-family: var(--font-mono);
+  color: var(--mech-ink);
+}
+
+.order-detail-wrap {
+  border-radius: var(--radius-xs);
+  border-color: var(--color-border-strong);
+}
+
+.order-detail-grid {
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--color-border);
+}
+
+.stat-card {
+  border-radius: var(--radius-xs);
+  background: #fff;
+  border-left: 3px solid var(--color-accent);
+  transition: transform var(--transition-base), box-shadow var(--transition-base),
+    border-color var(--transition-base);
+}
+
+.stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--mech-shadow-soft);
+  border-color: var(--mech-ink);
+}
+
+.stat-value {
+  font-family: var(--font-mono);
+  color: var(--mech-ink);
+  letter-spacing: -0.02em;
+}
+
+.stat-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.orders-empty-icon {
+  opacity: 0.4;
+}
+
+/* ============================================================
+   十八、页脚
+   ============================================================ */
+.site-footer {
+  background: #121619;
+  border-top: 1px solid #000;
+  color: #cfd5da;
+  position: relative;
+}
+
+.site-footer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--color-accent);
+}
+
+.site-footer .logo-text {
+  color: #fff;
+}
+
+.site-footer .logo-mark {
+  border-color: rgba(255, 255, 255, 0.28);
+  color: var(--color-accent);
+}
+
+.footer-desc,
+.footer-links,
+.footer-bottom {
+  color: #8d979f;
+}
+
+.footer-links a {
+  position: relative;
+  padding-bottom: 2px;
+  transition: color var(--transition-fast);
+}
+
+.footer-links a::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--color-accent);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform var(--transition-base);
+}
+
+.footer-links a:hover {
+  color: #fff;
+}
+
+.footer-links a:hover::after {
+  transform: scaleX(1);
+}
+
+.footer-bottom {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+
+/* ============================================================
+   十九、无障碍：只在"真的用鼠标"时加位移，触屏点按不抖
+   ============================================================ */
+@media (hover: none) {
+  .product-card:hover,
+  .category-card:hover,
+  .order-card:hover,
+  .stat-card:hover {
+    transform: none;
+  }
+}
+
+/* ============================================================
+   二十、窄屏细节
+   ------------------------------------------------------------
+   手机上一张卡片只有 140px 左右的文字宽度，
+   价格（等宽字体）+ 星级评分并排会超出卡片，
+   所以让这一行允许换行，评分掉到第二行。
+   ============================================================ */
+@media (max-width: 767px) {
+  .product-meta {
+    flex-wrap: wrap;
+    row-gap: 2px;
+  }
+
+  .product-rating {
+    font-size: 10px;
+  }
+
+  .product-price {
+    font-size: var(--fs-md);
+  }
+}
+
+/* ============================================================
+   二十、暗色模式
+   ------------------------------------------------------------
+   注意：本文件末尾的暗色令牌必须再写一遍。
+   因为 variables.css 里的暗色定义写在媒体查询里，
+   而本文件的 :root 后加载、优先级相同，会把它们盖掉。
+   ============================================================ */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-text: #e6eaee;
+    --color-text-sub: #9aa4ad;
+    --color-text-light: #77828c;
+
+    --color-bg: #161b20;
+    --color-bg-soft: #1b2127;
+    --color-bg-mute: #232a31;
+    --color-border: #2c343b;
+    --color-border-strong: #3d474f;
+
+    --color-primary: #e6eaee;
+    --color-primary-light: #232a31;
+
+    --mech-grid: rgba(255, 255, 255, 0.045);
+    --mech-ink: #e6eaee;
+    --mech-shadow: 4px 4px 0 rgba(0, 0, 0, 0.6);
+    --mech-shadow-soft: 4px 4px 0 rgba(0, 0, 0, 0.45);
+
+    --shadow-md: 0 10px 20px rgba(0, 0, 0, 0.5);
+    --shadow-lg: 0 16px 32px rgba(0, 0, 0, 0.55);
+    --shadow-xl: 0 28px 56px rgba(0, 0, 0, 0.6);
+  }
+
+  body {
+    background-color: #10151a;
+  }
+
+  .hero {
+    background: #141a20;
+  }
+
+  .hero::before {
+    background-image:
+      linear-gradient(to right, rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  }
+
+  .hero-blob {
+    border-color: rgba(255, 255, 255, 0.28);
+  }
+
+  .hero-blob::before,
+  .hero-blob::after {
+    background: rgba(255, 255, 255, 0.16);
+  }
+
+  .hero-float {
+    background: var(--color-bg);
+    border-color: var(--color-border-strong);
+  }
+
+  .hero-eyebrow {
+    background: var(--color-bg);
+    border-color: var(--color-border-strong);
+  }
+
+  .product-card,
+  .category-card,
+  .filter-bar,
+  .stat-card,
+  .detail-price-box,
+  .btn-outline,
+  .filter-chip,
+  .msg-assistant .msg-bubble {
+    background: var(--color-bg);
+  }
+
+  /* 深色模式里"墨色"反转成了浅色，
+     所以所有"浅底 + 白字"的实心块都要把文字改回深色 */
+  .btn-primary,
+  .btn-outline:hover:not(:disabled),
+  .product-cat-tag,
+  .page-btn.is-active,
+  .qty-btn:hover:not(:disabled),
+  .drawer-close:hover,
+  .agent-fab,
+  .msg-user .msg-bubble,
+  .msg-product-add,
+  .agent-send,
+  .brand-badge,
+  .detail-tag-cloud .tag:hover {
+    color: #10151a;
+  }
+
+  /* 面板头部保持深色，否则白色标题会看不见 */
+  .agent-head {
+    background: #1b232b;
+    color: #fff;
+  }
+
+  .site-header {
+    background: #0b0f13;
+  }
+
+  .hero-eyebrow {
+    color: var(--color-text);
+  }
+
+  .product-price,
+  .cart-total,
+  .order-total strong,
+  .stat-value,
+  .detail-price {
+    color: var(--color-text);
+  }
+
+  .btn-outline:hover:not(:disabled) {
+    background: var(--color-text);
+    border-color: var(--color-text);
+    color: #10151a;
+  }
+
+  .btn-primary:hover:not(:disabled),
+  .product-card:hover .btn-add:not(:disabled),
+  .agent-send:hover:not(:disabled),
+  .msg-product-add:hover {
+    color: #14181d;
+  }
+
+  .product-price .unit {
+    color: var(--color-accent);
+  }
+
+  .form-input:focus,
+  .search-input:focus {
+    background: var(--color-bg);
+  }
+
+  .msg-user .msg-bubble {
+    background: #2a333c;
+  }
+
+  .modal,
+  .user-dropdown,
+  .agent-panel,
+  .cart-drawer,
+  .support-panel {
+    background: var(--color-bg);
+  }
+}
