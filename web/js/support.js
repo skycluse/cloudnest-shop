@@ -967,11 +967,14 @@ function appendSupportMessage(role, text, products, quickReplies) {
       var p = products[i];
       cards +=
         '<div class="msg-product">' +
-          '<img src="' + utils.escapeHtml(p.image) + '" alt="" loading="lazy" />' +
-          '<div class="msg-product-info">' +
-            '<div class="msg-product-name">' + utils.escapeHtml(p.name) + '</div>' +
-            '<div class="msg-product-price">¥' + utils.formatPrice(p.price) + '</div>' +
-          '</div>' +
+          /* 点卡片进商品详情，和购物助手的卡片保持一致 */
+          '<a class="msg-product-main" href="./product.html?id=' + p.id + '" title="查看详情">' +
+            '<img src="' + utils.escapeHtml(p.image) + '" alt="" loading="lazy" />' +
+            '<div class="msg-product-info">' +
+              '<div class="msg-product-name">' + utils.escapeHtml(p.name) + '</div>' +
+              '<div class="msg-product-price">¥' + utils.formatPrice(p.price) + '</div>' +
+            '</div>' +
+          '</a>' +
           /* 用 data-add-cart 复用 components.js 里的全局事件委托，
              这样这里的"加购"按钮和商品卡片的加购按钮走同一套逻辑，
              不用再写一遍重复代码。 */

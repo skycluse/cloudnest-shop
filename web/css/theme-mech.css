@@ -1101,6 +1101,19 @@ body {
   transform: translateX(2px);
 }
 
+.msg-product-main:hover .msg-product-name {
+  color: var(--color-accent);
+}
+
+.msg-product-main:hover img {
+  border-color: var(--mech-ink);
+}
+
+.msg-product-price {
+  color: var(--mech-ink);
+  font-family: var(--font-mono);
+}
+
 .msg-product img {
   border-radius: 0;
   border: 1px solid var(--color-border);

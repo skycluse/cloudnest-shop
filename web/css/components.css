@@ -1575,7 +1575,7 @@
 
 .msg-product {
   display: grid;
-  grid-template-columns: 52px 1fr auto;
+  grid-template-columns: 1fr auto;
   gap: var(--space-3);
   align-items: center;
   padding: var(--space-2);
@@ -1583,6 +1583,16 @@
   border-radius: var(--radius-sm);
   background: var(--color-bg);
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+/* 图片 + 名称 + 价格包成一个链接：点它进详情页 */
+.msg-product-main {
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  gap: var(--space-3);
+  align-items: center;
+  min-width: 0;
+  color: inherit;
 }
 
 .msg-product:hover {
