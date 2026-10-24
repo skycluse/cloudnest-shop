@@ -1516,11 +1516,15 @@ function appendMessage(role, text, products, steps) {
       var p = products[j];
       cards +=
         '<div class="msg-product">' +
-          '<img src="' + utils.escapeHtml(p.image) + '" alt="" loading="lazy" />' +
-          '<div class="msg-product-info">' +
-            '<div class="msg-product-name">' + utils.escapeHtml(p.name) + '</div>' +
-            '<div class="msg-product-price">¥' + utils.formatPrice(p.price) + '</div>' +
-          '</div>' +
+          /* 图片和名称包在 <a> 里：点卡片就能进商品详情页
+             （考核 9.7 的富消息要求"点卡片可直接跳转详情或加购"） */
+          '<a class="msg-product-main" href="./product.html?id=' + p.id + '" title="查看详情">' +
+            '<img src="' + utils.escapeHtml(p.image) + '" alt="" loading="lazy" />' +
+            '<div class="msg-product-info">' +
+              '<div class="msg-product-name">' + utils.escapeHtml(p.name) + '</div>' +
+              '<div class="msg-product-price">¥' + utils.formatPrice(p.price) + '</div>' +
+            '</div>' +
+          '</a>' +
           '<button class="msg-product-add" type="button" data-add-cart="' + p.id + '">加购</button>' +
         '</div>';
     }
