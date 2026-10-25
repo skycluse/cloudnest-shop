@@ -1,7 +1,7 @@
 /**
- * 9.8 Agent 效果评估（挑战项）
+ * AI Agent 效果评估
  * ------------------------------------------------------------
- * 考核 9.8 要求：
+ * 评估要做的事：
  *   1. 不少于 10 条测试用例，覆盖单轮查询、多轮追问、复合约束、
  *      歧义输入、超范围请求、提示词注入等类型，并写明预期行为
  *   2. 记录完整调用链路（Trace）：用户输入 → 工具 → 入参 → 返回 → 最终回复
@@ -397,7 +397,7 @@ function writeReport(metrics, traces) {
   const caseIds = Object.keys(TYPE_LABEL);
   const lines = [];
 
-  lines.push('# AI Agent 效果评估（考核 9.8）');
+  lines.push('# AI Agent 效果评估');
   lines.push('');
   lines.push('> 本文件由 `npm run eval`（`tools/eval-agent.js`）自动生成，不是手写的数据。');
   lines.push('> 生成时间：' + stamp + '　·　环境：本地 Node.js + jsdom 真实执行页面 JS');
@@ -462,7 +462,7 @@ function writeReport(metrics, traces) {
   lines.push('1. **理解自然语言用的是本地规则引擎，不是大模型**。');
   lines.push('   所以上面 100% 的完成率只代表"这些用例覆盖到的说法"能被正确处理，');
   lines.push('   不代表任意说法都能理解 —— 例如用中文数字说"五百以内"就可能识别不到。');
-  lines.push('2. **没有做双模型对比**（9.8 第 4 条是可选加分项）。');
+  lines.push('2. **没有做双模型对比**（这一项是可选的）。');
   lines.push('   因为当前实现没有接入 Qwen / DeepSeek 的 API Key，强行对比没有意义。');
   lines.push('   接上模型后，这个脚本可以直接复用：把 `agent.send()` 换成模型请求即可。');
   lines.push('3. **幻觉的定义**：推荐给用户的商品 id 不在本轮工具返回的结果里，记为 1 次。');
@@ -484,7 +484,7 @@ function writeReport(metrics, traces) {
 
 async function main() {
   console.log('\n' + '='.repeat(64));
-  console.log('  9.8 Agent 效果评估');
+  console.log('  AI Agent 效果评估');
   console.log('='.repeat(64));
 
   // 写操作要用真实账号，先注册一个

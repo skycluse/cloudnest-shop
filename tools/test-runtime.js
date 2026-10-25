@@ -300,14 +300,14 @@ async function main() {
       fail('AI 回答不对', lastText.slice(0, 150));
     }
 
-    // 工具调用过程面板：考核 9.5 第 4 条建议展示"思考 → 调工具 → 结果"，
+    // 工具调用过程面板：展示"思考 → 调工具 → 结果"，
     // 这里断言它【存在】且是可折叠的、默认收起、内容里能看到工具名。
     const toolSteps = home.document.querySelectorAll('.tool-steps');
     const lastPanel = toolSteps[toolSteps.length - 1];
     if (toolSteps.length > 0) {
       ok(`工具调用过程面板已展示（${toolSteps.length} 个）`);
     } else {
-      fail('界面里没有「执行步骤」面板，9.5 第 4 条的过程展示丢了');
+      fail('界面里没有「执行步骤」面板，执行过程的展示丢了');
     }
     if (lastPanel && lastPanel.tagName === 'DETAILS' && lastPanel.open === false) {
       ok('步骤面板是可折叠的，且默认收起');
