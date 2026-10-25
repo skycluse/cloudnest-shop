@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <!-- viewport 是响应式的第一步：让手机按真实宽度渲染，而不是缩放成 980px -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="在云巢商城搜索商品" />
+  <title>搜索商品 · 云巢商城 CloudNest</title>
+  <link rel="stylesheet" href="./css/reset.css" />
+  <link rel="stylesheet" href="./css/variables.css" />
+  <link rel="stylesheet" href="./css/layout.css" />
+  <link rel="stylesheet" href="./css/components.css" />
+  <link rel="stylesheet" href="./css/pages/search.css" />
+  <link rel="stylesheet" href="./css/pages/auth.css" />
+  <link rel="stylesheet" href="./css/pages/support.css" />
+  <!-- 机械化主题层：必须最后加载，用同名选择器覆盖上面的默认样式 -->
+  <link rel="stylesheet" href="./css/theme-mech.css" />
+</head>
+<body>
+
+  <!-- ==================== 顶部导航栏 ==================== -->
+  <header class="site-header" id="siteHeader">
+    <div class="container header-inner">
+
+      <!-- Logo -->
+      <a class="logo" href="./index.html">
+        <span class="logo-mark" data-icon="package" data-icon-size="24"></span>
+        <span class="logo-text">云巢商城</span>
+      </a>
+
+      <!-- 搜索框 -->
+      <form class="search-box" id="searchForm" role="search">
+        <span class="search-icon" data-icon="search" data-icon-size="16"></span>
+        <input
+          type="search"
+          id="searchInput"
+          class="search-input"
+          placeholder="搜索商品，如：耳机、机械键盘、充电宝"
+          autocomplete="off"
+        />
+        <button type="submit" class="search-btn">搜索</button>
+      </form>
+
+      <!-- 右侧图标区 -->
+      <nav class="header-actions">
+        <!-- 客服入口：点开是 AI 客服对话面板 -->
+        <button class="icon-btn support-trigger" id="supportTrigger" type="button" title="联系客服">
+          <span class="icon" data-icon="headset" data-icon-size="19"></span><span class="icon-label">客服</span>
+        </button>
+
+        <a class="icon-btn" href="./index.html#products" title="全部商品">
+          <span class="icon" data-icon="package" data-icon-size="19"></span>
+          <span class="icon-label">商品</span>
+        </a>
+
+        <a class="icon-btn" href="./orders.html" title="我的订单">
+          <span class="icon" data-icon="receipt" data-icon-size="19"></span>
+          <span class="icon-label">订单</span>
+        </a>
+
+        <!-- 购物车按钮：点击弹出侧拉购物车 -->
+        <button class="icon-btn cart-trigger" id="cartTrigger" type="button" title="购物车">
+          <span class="icon" data-icon="shoppingCart" data-icon-size="19"></span>
+          <span class="icon-label">购物车</span>
+          <!-- 角标：购物车里有几件商品 -->
+          <span class="cart-badge" id="cartBadge" hidden>0</span>
+        </button>
+
+        <!-- 登录 / 用户菜单：内容由 auth.js 动态渲染 -->
+        <div class="auth-area" id="authArea">
+          <button class="icon-btn auth-trigger" type="button" title="登录 / 注册">
+            <span class="icon" data-icon="user" data-icon-size="19"></span>
+            <span class="icon-label">登录</span>
+          </button>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ==================== 页面主体 ==================== -->
+  <main id="main">
+
+    <!-- ---------- 搜索信息栏 ---------- -->
+    <section class="search-band">
+      <div class="container">
+        <h1 class="search-title" id="searchTitle">搜索结果</h1>
+        <p class="search-sub" id="searchSub">正在加载…</p>
+
+        <!-- 搜索词为空时显示的提示 -->
+        <div class="search-hint" id="searchHint" hidden>
+          <p>在上方搜索框输入关键词，比如「耳机」「机械键盘」「充电宝」。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- 筛选 + 商品列表 ---------- -->
+    <section class="section search-results" id="results">
+      <div class="container">
+
+        <!-- 筛选工具条 -->
+        <div class="filter-bar">
+          <div class="filter-group">
+            <label class="filter-label" for="filterCategory">分类</label>
+            <select class="filter-select" id="filterCategory">
+              <option value="">全部分类</option>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <label class="filter-label" for="filterMinPrice">价格</label>
+            <div class="price-range">
+              <input class="filter-input" type="number" id="filterMinPrice" placeholder="最低" min="0" />
+              <span class="price-dash">—</span>
+              <input class="filter-input" type="number" id="filterMaxPrice" placeholder="最高" min="0" />
+            </div>
+          </div>
+
+          <div class="filter-group">
+            <label class="filter-label" for="filterSort">排序</label>
+            <select class="filter-select" id="filterSort">
+              <option value="default">综合</option>
+              <option value="price_asc">价格从低到高</option>
+              <option value="price_desc">价格从高到低</option>
+              <option value="rating">评分最高</option>
+            </select>
+          </div>
+
+          <button class="btn btn-outline btn-sm" id="filterReset" type="button">重置</button>
+        </div>
+
+        <!-- 已选筛选条件（标签形式展示） -->
+        <div class="active-filters" id="activeFilters"></div>
+
+        <!-- 商品网格：JS 渲染 -->
+        <div class="product-grid" id="productGrid">
+          <p class="loading-text">商品加载中…</p>
+        </div>
+
+        <!-- 没搜到结果时的引导 -->
+        <div class="search-empty-extra" id="searchEmptyExtra" hidden>
+          <p class="search-empty-label">换个词试试：</p>
+          <div class="search-suggest-chips" id="searchSuggestChips"></div>
+        </div>
+
+        <!-- 分页 -->
+        <div class="pagination" id="pagination"></div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ==================== 页脚 ==================== -->
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <span class="logo-mark" data-icon="package" data-icon-size="24"></span>
+        <span class="logo-text">云巢商城 CloudNest</span>
+        <p class="footer-desc">桌面数码好物精选 · 项目演示站点，非真实商业网站</p>
+      </div>
+      <div class="footer-links">
+        <a href="./index.html#products">全部商品</a>
+        <a href="./orders.html">我的订单</a>
+        <a href="./index.html#categories">商品分类</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="container">
+        <span>© 2026 云巢商城 · 学习项目演示</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ==================== 侧拉购物车 ==================== -->
+  <!-- 遮罩层：点击它关闭购物车 -->
+  <div class="drawer-mask" id="drawerMask" hidden></div>
+
+  <aside class="cart-drawer" id="cartDrawer" aria-hidden="true">
+    <header class="drawer-head">
+      <h3 class="drawer-title">购物车 <span class="drawer-count" id="cartDrawerCount">(0)</span></h3>
+      <button class="drawer-close" id="cartClose" type="button" aria-label="关闭" data-icon="x" data-icon-size="17"></button>
+    </header>
+
+    <!-- 购物车商品列表：JS 渲染 -->
+    <div class="drawer-body" id="cartBody">
+      <p class="loading-text">购物车加载中…</p>
+    </div>
+
+    <footer class="drawer-foot">
+      <div class="cart-summary-row">
+        <span>合计</span>
+        <strong class="cart-total" id="cartTotal">¥0.00</strong>
+      </div>
+      <div class="drawer-actions">
+        <button class="btn btn-outline btn-block" id="cartClear" type="button">清空购物车</button>
+        <button class="btn btn-primary btn-block" id="cartCheckout" type="button">去结算</button>
+      </div>
+    </footer>
+  </aside>
+
+  <!-- ==================== 结算弹窗 ==================== -->
+  <div class="modal-mask" id="checkoutMask" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="checkoutTitle">
+      <header class="modal-head">
+        <h3 class="modal-title" id="checkoutTitle">填写收货信息</h3>
+        <button class="drawer-close" id="checkoutClose" type="button" aria-label="关闭" data-icon="x" data-icon-size="17"></button>
+      </header>
+
+      <form class="modal-body" id="checkoutForm" novalidate>
+        <div class="form-row">
+          <label class="form-label" for="ckName">收货人 <span class="required">*</span></label>
+          <input class="form-input" type="text" id="ckName" placeholder="请输入姓名" required />
+          <p class="form-error" id="errName"></p>
+        </div>
+
+        <div class="form-row">
+          <label class="form-label" for="ckPhone">手机号 <span class="required">*</span></label>
+          <input class="form-input" type="tel" id="ckPhone" placeholder="11 位手机号" required />
+          <p class="form-error" id="errPhone"></p>
+        </div>
+
+        <div class="form-row">
+          <label class="form-label" for="ckAddress">收货地址 <span class="required">*</span></label>
+          <textarea class="form-input" id="ckAddress" rows="3" placeholder="省 / 市 / 区 + 详细地址" required></textarea>
+          <p class="form-error" id="errAddress"></p>
+        </div>
+
+        <div class="form-row">
+          <label class="form-label" for="ckRemark">备注</label>
+          <input class="form-input" type="text" id="ckRemark" placeholder="选填，如：工作日送达" />
+        </div>
+
+        <div class="checkout-summary" id="checkoutSummary"></div>
+
+        <p class="form-error form-error-global" id="errGlobal"></p>
+      </form>
+
+      <footer class="modal-foot">
+        <button class="btn btn-ghost" id="checkoutCancel" type="button">取消</button>
+        <button class="btn btn-primary" id="checkoutSubmit" type="button">提交订单（模拟支付）</button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- ==================== 下单结果弹窗 ==================== -->
+  <div class="modal-mask" id="resultMask" hidden>
+    <div class="modal modal-result" role="dialog" aria-modal="true">
+      <div class="result-icon" data-icon="checkCircle" data-icon-size="52"></div>
+      <h3 class="result-title">下单成功！</h3>
+      <p class="result-desc">订单已提交（模拟支付），可在「我的订单」中查看</p>
+      <div class="result-info" id="resultInfo"></div>
+      <div class="result-actions">
+        <a class="btn btn-primary" id="resultViewOrder" href="./orders.html">查看订单</a>
+        <button class="btn btn-ghost" id="resultContinue" type="button">继续购物</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== AI 购物助手（浮窗） ==================== -->
+  <button class="agent-fab" id="agentFab" type="button" title="AI 购物助手">
+    <span class="agent-fab-icon" data-icon="sparkles" data-icon-size="19"></span>
+    <span class="agent-fab-text">AI 助手</span>
+  </button>
+
+  <section class="agent-panel" id="agentPanel" aria-hidden="true">
+    <header class="agent-head">
+      <div class="agent-head-left">
+        <span class="agent-avatar" data-icon="sparkles" data-icon-size="18"></span>
+        <div>
+          <h3 class="agent-title">云巢 AI 购物助手</h3>
+          <p class="agent-status" id="agentStatus">在线 · 基于商城真实商品推荐</p>
+        </div>
+      </div>
+      <div class="agent-head-actions">
+        <button class="agent-clear" id="agentClear" type="button" title="清空对话记录">清空</button>
+        <button class="drawer-close" id="agentClose" type="button" aria-label="关闭" data-icon="x" data-icon-size="17"></button>
+      </div>
+    </header>
+
+    <div class="agent-body" id="agentBody">
+      <!-- 消息由 JS 渲染 -->
+    </div>
+
+    <!-- 快捷问题 Chips -->
+    <div class="agent-chips" id="agentChips"></div>
+
+    <form class="agent-input-row" id="agentForm">
+      <input
+        class="agent-input"
+        type="text"
+        id="agentInput"
+        placeholder="例如：500 元以内的运动耳机有吗？"
+        autocomplete="off"
+      />
+      <button class="agent-send" type="submit" id="agentSend" aria-label="发送" data-icon="send" data-icon-size="17"></button>
+    </form>
+  </section>
+
+  <!-- ==================== 登录 / 注册弹窗 ==================== -->
+  <div class="modal-mask" id="authMask" hidden>
+    <div class="modal modal-auth" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+      <header class="modal-head">
+        <div>
+          <h3 class="modal-title" id="authTitle">登录</h3>
+          <p class="auth-desc" id="authDesc">登录后可以查看「我的订单」</p>
+        </div>
+        <button class="drawer-close" id="authClose" type="button" aria-label="关闭"
+                data-icon="x" data-icon-size="17"></button>
+      </header>
+
+      <form class="modal-body" id="authForm" novalidate>
+        <div class="form-row">
+          <label class="form-label" for="authUsername">用户名</label>
+          <input class="form-input" type="text" id="authUsername"
+                 placeholder="3~20 位字母、数字或下划线" autocomplete="username" />
+        </div>
+
+        <div class="form-row">
+          <label class="form-label" for="authPassword">密码</label>
+          <input class="form-input" type="password" id="authPassword"
+                 placeholder="至少 6 位" autocomplete="current-password" />
+        </div>
+
+        <div class="form-row" id="authNicknameRow" hidden>
+          <label class="form-label" for="authNickname">昵称</label>
+          <input class="form-input" type="text" id="authNickname"
+                 placeholder="选填，不填就用用户名" autocomplete="nickname" />
+        </div>
+
+        <p class="form-error form-error-global" id="authError"></p>
+
+        <p class="auth-hint">
+          这是演示项目，请勿使用你在其它网站的真实密码。
+        </p>
+      </form>
+
+      <footer class="modal-foot modal-foot-auth">
+        <div class="auth-switch">
+          <span id="authSwitchText">还没有账号？</span>
+          <button class="auth-switch-btn" id="authSwitchBtn" type="button">免费注册</button>
+        </div>
+        <button class="btn btn-primary" id="authSubmit" type="button">登录</button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- ==================== 全局提示 Toast ==================== -->
+  <!-- ==================== AI 客服面板 ==================== -->
+  <div class="support-mask" id="supportMask" hidden></div>
+
+  <aside class="support-panel" id="supportPanel" aria-hidden="true">
+    <header class="support-head">
+      <div class="support-head-left">
+        <span class="support-avatar" data-icon="headset" data-icon-size="19"></span>
+        <div>
+          <h3 class="support-title">云巢客服</h3>
+          <p class="support-status">在线 · 订单信息来自你的真实订单</p>
+        </div>
+      </div>
+      <button class="drawer-close support-close" id="supportClose" type="button"
+              aria-label="关闭" data-icon="x" data-icon-size="17"></button>
+    </header>
+
+    <div class="support-body" id="supportBody">
+      <!-- 消息由 support.js 渲染 -->
+    </div>
+
+    <!-- 快捷问题 -->
+    <div class="support-chips" id="supportChips">
+      <button class="chip" type="button" data-question="我的订单到哪了">我的订单到哪了</button>
+      <button class="chip" type="button" data-question="怎么退货">怎么退货</button>
+      <button class="chip" type="button" data-question="运费怎么算">运费怎么算</button>
+      <button class="chip" type="button" data-question="保修多久">保修多久</button>
+    </div>
+
+    <form class="support-input-row" id="supportForm">
+      <input class="support-input" type="text" id="supportInput"
+             placeholder="描述你的问题，比如：我的订单到哪了" autocomplete="off" />
+      <button class="support-send" type="submit" id="supportSend" aria-label="发送"
+              data-icon="send" data-icon-size="17"></button>
+    </form>
+  </aside>
+
+  <div class="toast-wrap" id="toastWrap"></div>
+
+  <!-- ==================== 脚本 ==================== -->
+  <!-- 注意加载顺序：先 api/utils，再 cart，最后页面脚本 -->
+  <script src="./js/icons.js"></script>
+  <script src="./js/api.js"></script>
+  <script src="./js/utils.js"></script>
+  <script src="./js/cart.js"></script>
+  <script src="./js/auth.js"></script>
+  <script src="./js/components.js"></script>
+  <script src="./js/agent.js"></script>
+  <script src="./js/support.js"></script>
+  <script src="./js/search.js"></script>
+</body>
+</html>

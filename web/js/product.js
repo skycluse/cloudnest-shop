@@ -284,7 +284,7 @@ function bindDetailEvents(product) {
       var tag = event.target.closest('[data-tag]');
       if (!tag) return;
       var keyword = tag.getAttribute('data-tag');
-      window.location.href = './index.html?keyword=' + encodeURIComponent(keyword);
+      utils.goToSearchPage(keyword);
     });
   }
 }
@@ -384,14 +384,17 @@ async function initProductPage() {
     window.support.init();
   }
 
-  /* ---- 搜索框：在详情页搜索，跳到首页并带上关键词 ---- */
+  /* ---- 搜索框：跳到搜索结果页 ---- */
   var searchForm = utils.$('#searchForm');
   if (searchForm) {
     searchForm.addEventListener('submit', function (event) {
       event.preventDefault();
       var keyword = (utils.$('#searchInput').value || '').trim();
-      if (!keyword) return;
-      window.location.href = './index.html?keyword=' + encodeURIComponent(keyword);
+      if (!keyword) {
+        utils.toast('请输入要搜索的内容', 'info');
+        return;
+      }
+      utils.goToSearchPage(keyword);
     });
   }
 

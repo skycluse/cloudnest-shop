@@ -127,6 +127,61 @@ function renderProductGrid(container, products, emptyMessage) {
   el.innerHTML = html;
 }
 
+/**
+ * 渲染分页按钮。
+ *
+ * @param {object} result 接口返回的分页信息 { page, totalPages }
+ * @param {string} containerSelector 分页容器的选择器，默认 #pagination
+ *
+ * 【为什么放在这里而不是各页面自己写？】
+ * 首页和搜索结果页都要分页，逻辑完全一样。
+ * 放在公共组件里只有一份实现，改一处两边都生效，
+ * 不会出现"首页是一种样式、搜索页是另一种"的不一致。
+ */
+function renderPagination(result, containerSelector) {
+  var el = utils.$(containerSelector || '#pagination');
+  if (!el) return;
+
+  // 只有一页就不用显示分页了
+  if (!result || result.totalPages <= 1) {
+    el.innerHTML = '';
+    return;
+  }
+
+  var current = result.page;
+  var totalPages = result.totalPages;
+  var html = '';
+
+  // 上一页
+  html += '<button class="page-btn" type="button" data-page="' + (current - 1) + '"' +
+          (current <= 1 ? ' disabled' : '') + '>上一页</button>';
+
+  // 页码：最多显示当前页前后各 2 页，避免页码太多把页面撑爆
+  var start = Math.max(1, current - 2);
+  var end = Math.min(totalPages, current + 2);
+
+  if (start > 1) {
+    html += '<button class="page-btn" type="button" data-page="1">1</button>';
+    if (start > 2) html += '<span class="page-info">…</span>';
+  }
+
+  for (var p = start; p <= end; p++) {
+    html += '<button class="page-btn' + (p === current ? ' is-active' : '') + '" ' +
+            'type="button" data-page="' + p + '">' + p + '</button>';
+  }
+
+  if (end < totalPages) {
+    if (end < totalPages - 1) html += '<span class="page-info">…</span>';
+    html += '<button class="page-btn" type="button" data-page="' + totalPages + '">' + totalPages + '</button>';
+  }
+
+  // 下一页
+  html += '<button class="page-btn" type="button" data-page="' + (current + 1) + '"' +
+          (current >= totalPages ? ' disabled' : '') + '>下一页</button>';
+
+  el.innerHTML = html;
+}
+
 /* ============================================================
    二、分类名称映射
    ------------------------------------------------------------
@@ -804,6 +859,7 @@ window.components = {
   // 卡片与列表
   productCardHtml: productCardHtml,
   renderProductGrid: renderProductGrid,
+  renderPagination: renderPagination,
   renderCategoryGrid: renderCategoryGrid,
   getCategoryName: getCategoryName,
   // 购物车与结算

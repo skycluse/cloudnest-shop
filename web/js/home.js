@@ -8,12 +8,15 @@
  * 首页的"状态"：当前用户选的筛选条件。
  * 每次筛选条件变化，就重新请求一次后端。
  *
+ * 【注意这里没有 keyword】
+ * 搜索已经独立成 search.html 了，首页只负责"浏览 + 分类/价格筛选"。
+ * 想按关键词搜，用的是导航栏的搜索框，点了会跳到搜索页。
+ *
  * 为什么不一次性把 24 个商品都拿到前端再筛？
  * 24 个当然可以。但真实商城有几十万商品，不可能全下发，
  * 所以必须由后端筛选 + 分页。这里就用真实项目的做法。
  */
 var homeState = {
-  keyword: '',
   category: '',
   minPrice: '',
   maxPrice: '',
@@ -87,7 +90,7 @@ async function loadRecommend() {
  * 有没有正在生效的筛选条件
  */
 function hasActiveFilter() {
-  return !!(homeState.keyword || homeState.category ||
+  return !!(homeState.category ||
             homeState.minPrice !== '' || homeState.maxPrice !== '' ||
             homeState.sort !== 'default');
 }
@@ -116,7 +119,6 @@ async function loadProducts() {
   try {
     // 只把有值的参数发出去
     var products = await window.api.getProducts({
-      keyword: homeState.keyword,
       category: homeState.category,
       minPrice: homeState.minPrice,
       maxPrice: homeState.maxPrice,
@@ -126,13 +128,11 @@ async function loadProducts() {
     });
 
     // 渲染商品网格
-    components.renderProductGrid(grid, products.items, '没有找到符合条件的商品，试试别的关键词？');
+    components.renderProductGrid(grid, products.items, '没有找到符合条件的商品，换个分类或价格区间试试？');
 
     // 更新标题和数量
     if (title) {
-      if (homeState.keyword) {
-        title.textContent = '搜索「' + homeState.keyword + '」';
-      } else if (homeState.category) {
+      if (homeState.category) {
         title.textContent = components.getCategoryName(homeState.category);
       } else {
         title.textContent = '全部商品';
@@ -144,8 +144,8 @@ async function loadProducts() {
         (products.totalPages > 1 ? ' · 第 ' + products.page + '/' + products.totalPages + ' 页' : '');
     }
 
-    // 渲染分页
-    renderPagination(products);
+    // 渲染分页（用公共组件里的实现，搜索页也用同一份）
+    components.renderPagination(products);
 
     // 渲染已选筛选条件标签
     renderActiveFilters();
@@ -165,55 +165,10 @@ async function loadProducts() {
 }
 
 /* ============================================================
-   三、分页
-   ============================================================ */
-
-function renderPagination(result) {
-  var el = utils.$('#pagination');
-  if (!el) return;
-
-  // 只有一页就不用显示分页了
-  if (!result || result.totalPages <= 1) {
-    el.innerHTML = '';
-    return;
-  }
-
-  var current = result.page;
-  var totalPages = result.totalPages;
-  var html = '';
-
-  // 上一页
-  html += '<button class="page-btn" type="button" data-page="' + (current - 1) + '"' +
-          (current <= 1 ? ' disabled' : '') + '>上一页</button>';
-
-  // 页码：最多显示当前页前后各 2 页，避免页码太多把页面撑爆
-  var start = Math.max(1, current - 2);
-  var end = Math.min(totalPages, current + 2);
-
-  if (start > 1) {
-    html += '<button class="page-btn" type="button" data-page="1">1</button>';
-    if (start > 2) html += '<span class="page-info">…</span>';
-  }
-
-  for (var p = start; p <= end; p++) {
-    html += '<button class="page-btn' + (p === current ? ' is-active' : '') + '" ' +
-            'type="button" data-page="' + p + '">' + p + '</button>';
-  }
-
-  if (end < totalPages) {
-    if (end < totalPages - 1) html += '<span class="page-info">…</span>';
-    html += '<button class="page-btn" type="button" data-page="' + totalPages + '">' + totalPages + '</button>';
-  }
-
-  // 下一页
-  html += '<button class="page-btn" type="button" data-page="' + (current + 1) + '"' +
-          (current >= totalPages ? ' disabled' : '') + '>下一页</button>';
-
-  el.innerHTML = html;
-}
-
-/* ============================================================
-   四、已选筛选条件标签
+   三、已选筛选条件标签
+   ------------------------------------------------------------
+   分页的渲染移到了 components.js（renderPagination），
+   因为搜索结果页也要用，两边共用一份实现。
    ============================================================ */
 
 function renderActiveFilters() {
@@ -222,9 +177,6 @@ function renderActiveFilters() {
 
   var chips = [];
 
-  if (homeState.keyword) {
-    chips.push({ label: '关键词：' + homeState.keyword, key: 'keyword' });
-  }
   if (homeState.category) {
     chips.push({ label: '分类：' + components.getCategoryName(homeState.category), key: 'category' });
   }
@@ -253,30 +205,37 @@ function renderActiveFilters() {
    ============================================================ */
 
 function initHomeEvents() {
-  /* ---------- 搜索表单 ---------- */
+  /* ---------- 搜索表单：跳转到独立的搜索结果页 ----------
+     以前是在首页原地筛选 + 滚到商品区，现在改成跳转 search.html。
+
+     为什么改？
+     · 搜索结果有了自己的地址，能分享、能收藏、能刷新
+     · 不跟首页的横幅、分类、推荐区挤在一起
+     · 浏览器后退能回到搜索结果，而不是回滚首页顶部
+  */
   var searchForm = utils.$('#searchForm');
   if (searchForm) {
     searchForm.addEventListener('submit', function (event) {
       event.preventDefault();       // 阻止表单默认的"刷新页面"行为
       var input = utils.$('#searchInput');
-      homeState.keyword = (input.value || '').trim();
-      homeState.page = 1;           // 换了搜索词要回到第 1 页
-      loadProducts();
-      utils.scrollToElement('#products');
+      var keyword = (input.value || '').trim();
+
+      // 没输关键词就不跳，留在首页（跳到空结果页没意义）
+      if (!keyword) {
+        utils.toast('请输入要搜索的内容', 'info');
+        return;
+      }
+
+      utils.goToSearchPage(keyword);
     });
   }
 
-  /* ---------- 搜索框边打字边搜（防抖 400ms） ---------- */
-  var searchInput = utils.$('#searchInput');
-  if (searchInput) {
-    var doLiveSearch = utils.debounce(function () {
-      homeState.keyword = (searchInput.value || '').trim();
-      homeState.page = 1;
-      loadProducts();
-    }, 400);
-
-    searchInput.addEventListener('input', doLiveSearch);
-  }
+  /* ---------- 首页不再做"边打字边搜" ----------
+     以前输入时会实时筛首页的商品列表，现在搜索统一走独立页面。
+     留着它会出现矛盾行为：一边原地筛选、一边点搜索又跳走，
+     用户会搞不清自己到底在看哪个结果。
+     所以这里只保留"回车/点搜索 → 跳转搜索页"。
+  */
 
   /* ---------- 分类筛选下拉框 ---------- */
   var filterCategory = utils.$('#filterCategory');
@@ -379,7 +338,6 @@ function initHomeEvents() {
       homeState.page = 1;
 
       // 同步界面控件
-      if (key === 'keyword' && searchInput) searchInput.value = '';
       if (key === 'category' && filterCategory) filterCategory.value = '';
       if (key === 'minPrice' && minPriceInput) minPriceInput.value = '';
       if (key === 'maxPrice' && maxPriceInput) maxPriceInput.value = '';
@@ -409,7 +367,6 @@ function syncCategoryCards() {
  * 重置所有筛选条件
  */
 function resetFilters() {
-  homeState.keyword = '';
   homeState.category = '';
   homeState.minPrice = '';
   homeState.maxPrice = '';
@@ -417,7 +374,6 @@ function resetFilters() {
   homeState.page = 1;
 
   // 清空界面控件
-  if (utils.$('#searchInput')) utils.$('#searchInput').value = '';
   if (utils.$('#filterCategory')) utils.$('#filterCategory').value = '';
   if (utils.$('#filterMinPrice')) utils.$('#filterMinPrice').value = '';
   if (utils.$('#filterMaxPrice')) utils.$('#filterMaxPrice').value = '';
@@ -457,13 +413,23 @@ async function initHomePage() {
     window.support.init();
   }
 
-  // 2. 支持从别的页面带参数跳过来，如 index.html?keyword=耳机
+  /* 2. 兼容旧地址
+     ------------------------------------------------------------
+     以前搜索是在首页原地筛选，地址形如 index.html?keyword=耳机。
+     现在关键词搜索独立成 search.html 了，
+     如果还带着旧地址进来（老书签、旧分享链接），就转到搜索页，
+     免得用户看到一个"没搜到东西"的首页。
+
+     ?category=xxx 仍然留在首页处理，因为分类浏览属于首页的功能。 */
   var urlKeyword = utils.getUrlParam('keyword');
-  var urlCategory = utils.getUrlParam('category');
   if (urlKeyword) {
-    homeState.keyword = urlKeyword;
-    if (utils.$('#searchInput')) utils.$('#searchInput').value = urlKeyword;
+    window.location.replace(
+      './search.html?keyword=' + encodeURIComponent(urlKeyword)
+    );
+    return;
   }
+
+  var urlCategory = utils.getUrlParam('category');
   if (urlCategory) {
     homeState.category = urlCategory;
   }

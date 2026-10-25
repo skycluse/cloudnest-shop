@@ -365,14 +365,17 @@ async function initOrdersPage() {
     window.support.init();
   }
 
-  /* ---- 搜索框：跳到首页搜索 ---- */
+  /* ---- 搜索框：跳到搜索结果页 ---- */
   var searchForm = utils.$('#searchForm');
   if (searchForm) {
     searchForm.addEventListener('submit', function (event) {
       event.preventDefault();
       var keyword = (utils.$('#searchInput').value || '').trim();
-      if (!keyword) return;
-      window.location.href = './index.html?keyword=' + encodeURIComponent(keyword);
+      if (!keyword) {
+        utils.toast('请输入要搜索的内容', 'info');
+        return;
+      }
+      utils.goToSearchPage(keyword);
     });
   }
 

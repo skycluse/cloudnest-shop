@@ -48,8 +48,12 @@ npm start       # 启动后在浏览器打开 http://localhost:3000
 **逛商品**
 
 - 首页：导航栏、为你推荐（评分最高的 4 件）、6 个分类入口、商品列表、搜索框、购物车入口
-- 搜索：按名称、简介、标签、品牌搜，输入停顿 400ms 才发请求（不会每敲一个字请求一次）
-- 筛选：按分类、价格区间筛选，可排序
+- 搜索：点搜索跳到**独立的搜索结果页**（`search.html`），不在首页原地筛选
+  - 结果页有自己的地址，能分享、收藏、刷新，浏览器后退也正常
+  - 支持关键词、分类、价格区间组合筛选，可排序、可翻页
+  - 筛选条件会同步到地址栏，比如 `search.html?keyword=耳机&maxPrice=500&sort=price_asc`
+  - 没搜到结果时给出「换个词试试」的建议词
+- 筛选：首页也能按分类、价格区间筛选，可排序
 - 商品详情：图片、名称、价格、介绍、分类、库存、规格参数、加购按钮、同类推荐
 
 **购物车**
@@ -93,17 +97,21 @@ npm start       # 启动后在浏览器打开 http://localhost:3000
 |---|---|
 | ![首页](docs/screenshots/01-home-desktop.png) | ![商品详情](docs/screenshots/02-product-detail.png) |
 
-| 侧拉购物车 | AI 购物助手 |
+| 搜索结果页 | 侧拉购物车 |
 |---|---|
-| ![购物车](docs/screenshots/05-cart-drawer.png) | ![AI 助手](docs/screenshots/06-ai-agent.png) |
+| ![搜索](docs/screenshots/10-search.png) | ![购物车](docs/screenshots/05-cart-drawer.png) |
 
-| 订单页 | AI 客服 |
+| AI 购物助手 | AI 客服 |
 |---|---|
-| ![订单](docs/screenshots/03-orders.png) | ![客服](docs/screenshots/09-support.png) |
+| ![AI 助手](docs/screenshots/06-ai-agent.png) | ![客服](docs/screenshots/09-support.png) |
 
-| 登录弹窗 | 手机端 |
+| 订单页 | 登录弹窗 |
 |---|---|
-| ![登录](docs/screenshots/07-login.png) | ![手机端](docs/screenshots/04-home-mobile.png) |
+| ![订单](docs/screenshots/03-orders.png) | ![登录](docs/screenshots/07-login.png) |
+
+| 用户菜单 | 手机端 |
+|---|---|
+| ![用户菜单](docs/screenshots/08-user-menu.png) | ![手机端](docs/screenshots/04-home-mobile.png) |
 
 ---
 
@@ -123,6 +131,7 @@ cloudnest-shop/
 │
 ├── web/                    前端
 │   ├── index.html          首页
+│   ├── search.html         搜索结果页
 │   ├── product.html        商品详情页
 │   ├── orders.html         订单页
 │   ├── css/
@@ -134,16 +143,16 @@ cloudnest-shop/
 │   │   └── pages/          各页面自己的样式
 │   └── js/
 │       ├── api.js          接口封装（所有请求都走这里）
-│       ├── utils.js        工具函数（格式化、防抖、转义）
+│       ├── utils.js        工具函数（格式化、防抖、转义、跳搜索页）
 │       ├── cart.js         购物车状态管理
 │       ├── auth.js         登录状态管理 + 登录弹窗
-│       ├── components.js   通用组件 + 全局事件
+│       ├── components.js   通用组件 + 全局事件（含分页渲染）
 │       ├── agent.js        AI 购物助手
 │       ├── support.js      AI 客服
-│       └── home.js / product.js / orders.js   三个页面的逻辑
+│       └── home.js / search.js / product.js / orders.js   各页面逻辑
 │
 ├── tools/                  测试和开发脚本
-│   ├── test-*.js           8 个测试脚本
+│   ├── test-*.js           9 个测试脚本
 │   └── eval-agent.js       AI Agent 效果评估
 └── docs/screenshots/       截图
 ```
@@ -324,13 +333,14 @@ npm run eval     # 跑 12 条用例
 npm test
 ```
 
-8 个脚本共 290 项检查：
+9 个脚本共 334 项检查：
 
 | 脚本 | 项数 | 测什么 |
 |---|---|---|
 | `test-agent-logic` | 43 | AI 的意图识别、预算和分类提取、组合购买计算 |
 | `test-pages` | 29 | 接口结构、搜索筛选、页面元素、下单参数校验 |
 | `test-auth` | 32 | 注册登录退出、密码加密、越权检查 |
+| `test-search` | 44 | 搜索结果页：关键词过滤、筛选同步地址栏、分页、空结果引导、各页面跳转 |
 | `test-runtime` | 40 | 用模拟浏览器跑页面 JS：渲染、购物车、AI 对话 |
 | `test-auth-ui` | 39 | 注册 → 登录 → 退出 → 再登录 |
 | `test-support` | 56 | AI 客服：知识库、查订单、不编造订单号、防注入 |

@@ -211,11 +211,42 @@ function toast(message, type) {
 
 /**
  * 读取地址栏上的查询参数
- * 地址是 index.html?keyword=耳机  ->  getUrlParam('keyword') 返回 '耳机'
+ * 地址是 search.html?keyword=耳机  ->  getUrlParam('keyword') 返回 '耳机'
  */
 function getUrlParam(name) {
   var params = new URLSearchParams(window.location.search);
   return params.get(name) || '';
+}
+
+/**
+ * 跳到搜索结果页。
+ *
+ * 所有页面的搜索框都调用这个函数，保证搜索行为一致：
+ * 不各页面自己拼地址，避免以后改路径时漏改某一处。
+ *
+ * @param {string} keyword 搜索关键词
+ * @param {object} extra 额外查询参数，如 { category: 'audio', maxPrice: 500 }
+ */
+function goToSearchPage(keyword, extra) {
+  var params = [];
+
+  function add(key, value) {
+    if (value === undefined || value === null || value === '') return;
+    params.push(encodeURIComponent(key) + '=' + encodeURIComponent(value));
+  }
+
+  add('keyword', keyword);
+
+  if (extra) {
+    add('category', extra.category);
+    add('minPrice', extra.minPrice);
+    add('maxPrice', extra.maxPrice);
+    // 默认排序不用带上，让地址干净些
+    if (extra.sort && extra.sort !== 'default') add('sort', extra.sort);
+  }
+
+  window.location.href = './search.html' +
+    (params.length > 0 ? '?' + params.join('&') : '');
 }
 
 /**
@@ -325,6 +356,7 @@ window.utils = {
   getStockInfo: getStockInfo,
   toast: toast,
   getUrlParam: getUrlParam,
+  goToSearchPage: goToSearchPage,
   scrollToElement: scrollToElement,
   clamp: clamp,
   applyImageFallback: applyImageFallback,
